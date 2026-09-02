@@ -1,0 +1,416 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant hover (&:hover);
+
+@theme {
+	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+	--radius-sm: 0.1875rem;
+	--radius-md: 0.25rem;
+	--radius-lg: 0.375rem;
+	--radius-xl: 0.5rem;
+	--radius-2xl: 0.75rem;
+	--radius-3xl: 1rem;
+	--radius-4xl: 1.5rem;
+
+	--color-gray-50: color-mix(in oklab, var(--app-bg) 96%, var(--app-fg));
+	--color-gray-100: color-mix(in oklab, var(--app-bg) 92%, var(--app-fg));
+	--color-gray-200: color-mix(in oklab, var(--app-bg) 85%, var(--app-fg));
+	--color-gray-300: color-mix(in oklab, var(--app-bg) 75%, var(--app-fg));
+	--color-gray-400: color-mix(in oklab, var(--app-bg) 65%, var(--app-fg));
+	--color-gray-500: color-mix(in oklab, var(--app-bg) 55%, var(--app-fg));
+	--color-gray-600: color-mix(in oklab, var(--app-bg) 45%, var(--app-fg));
+	--color-gray-700: color-mix(in oklab, var(--app-bg) 35%, var(--app-fg));
+	--color-gray-800: color-mix(in oklab, var(--app-bg) 25%, var(--app-fg));
+	--color-gray-850: color-mix(in oklab, var(--app-bg) 20%, var(--app-fg));
+	--color-gray-900: color-mix(in oklab, var(--app-bg) 15%, var(--app-fg));
+	--color-gray-950: color-mix(in oklab, var(--app-bg) 10%, var(--app-fg));
+}
+
+:root {
+	--app-text-scale: 1.2;
+	--app-bg: #0b0d10;
+	--app-fg: #e7e9ed;
+	--app-fg-muted: color-mix(in oklab, var(--app-fg) 62%, var(--app-bg));
+	--app-fg-subtle: color-mix(in oklab, var(--app-fg) 48%, var(--app-bg));
+	--app-fg-faint: color-mix(in oklab, var(--app-fg) 38%, var(--app-bg));
+	--app-surface: var(--app-bg);
+	--app-subtle-surface: var(--app-bg);
+	--app-sidebar: var(--app-bg);
+	--app-border: color-mix(in oklab, var(--app-fg) 12%, transparent);
+	--app-divider: color-mix(in oklab, var(--app-fg) 8%, transparent);
+	--app-hover: color-mix(in oklab, var(--app-fg) 6%, transparent);
+	--app-active: color-mix(in oklab, var(--app-fg) 7%, transparent);
+	--app-ui-font: var(--font-sans);
+	--app-shell-radius: 0.875rem;
+	--app-popover-radius: 0.625rem;
+	--app-menu-item-radius: 0.4375rem;
+}
+
+:root.dark {
+	--app-fg-muted: color-mix(in oklab, var(--app-fg) 68%, var(--app-bg));
+	--app-fg-subtle: color-mix(in oklab, var(--app-fg) 50%, var(--app-bg));
+	--app-fg-faint: color-mix(in oklab, var(--app-fg) 34%, var(--app-bg));
+	--app-surface: color-mix(in oklab, var(--app-bg) 96.5%, var(--app-fg));
+	--app-subtle-surface: color-mix(in oklab, var(--app-bg) 98%, var(--app-fg));
+	--app-sidebar: color-mix(in oklab, var(--app-bg) 99%, var(--app-fg));
+	--app-hover: color-mix(in oklab, var(--app-fg) 8%, transparent);
+	--app-active: color-mix(in oklab, var(--app-fg) 11%, transparent);
+}
+
+@layer base {
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--app-border, var(--color-gray-200, currentColor));
+	}
+
+	html,
+	body {
+		height: 100dvh;
+		margin: 0;
+		overflow: hidden;
+		overscroll-behavior: none;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		background: var(--app-bg);
+		color: var(--app-fg);
+		font-family: var(--app-ui-font);
+	}
+
+	html::-webkit-scrollbar,
+	body::-webkit-scrollbar {
+		display: none;
+	}
+
+	html {
+		color-scheme: dark light;
+		touch-action: manipulation;
+		font-size: calc(1rem * var(--app-text-scale, 1));
+	}
+
+	button {
+		@apply cursor-pointer;
+	}
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: color-mix(in oklab, var(--app-fg) 32%, transparent);
+	border-color: var(--app-bg);
+	border-radius: 624.9375rem;
+	border-width: 1px;
+}
+
+::-webkit-scrollbar {
+	height: 0.45rem;
+	width: 0.45rem;
+}
+
+::-webkit-scrollbar-track {
+	background-color: transparent;
+	border-radius: 624.9375rem;
+}
+
+.scrollbar-hidden,
+.scrollbar-none {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+	display: none;
+}
+
+.scrollbar-hover::-webkit-scrollbar-thumb {
+	visibility: hidden;
+}
+.scrollbar-hover:hover::-webkit-scrollbar-thumb {
+	visibility: visible;
+}
+
+.app-theme {
+	background: var(--app-bg);
+	color: var(--app-fg);
+}
+
+.app-surface {
+	background: var(--app-surface);
+	color: var(--app-fg);
+	border-color: var(--app-border);
+}
+
+.app-shell-radius {
+	border-radius: var(--app-shell-radius);
+}
+
+.app-popover-radius {
+	border-radius: var(--app-popover-radius);
+}
+
+.app-popover-radius .rounded-xl {
+	border-radius: var(--app-menu-item-radius);
+}
+
+.app-subtle-surface {
+	background: var(--app-subtle-surface);
+	color: var(--app-fg);
+	border-color: var(--app-border);
+}
+
+.app-divider {
+	background: var(--app-divider);
+}
+
+.app-muted {
+	color: var(--app-fg-muted);
+}
+
+.app-icon-muted {
+	color: var(--app-fg-subtle);
+}
+
+.app-interactive:hover {
+	background: var(--app-hover);
+	color: var(--app-fg);
+}
+
+.app-interactive-active {
+	background: var(--app-active);
+	color: var(--app-fg);
+}
+
+.app-theme :where(option) {
+	background: var(--app-surface);
+	color: var(--app-fg);
+}
+
+.app-theme:where([class*='border-gray-'], [class*='border-black/'], [class*='border-white/']),
+.app-theme :where([class*='border-gray-'], [class*='border-black/'], [class*='border-white/']) {
+	border-color: var(--app-border);
+}
+
+.dark .app-theme:where([class*='dark:border-gray-'], [class*='dark:border-white/']),
+.dark .app-theme :where([class*='dark:border-gray-'], [class*='dark:border-white/']) {
+	border-color: var(--app-border);
+}
+
+.app-theme
+	:where(
+		[class*='divide-gray-'] > :not(:last-child),
+		[class*='divide-black/'] > :not(:last-child),
+		[class*='divide-white/'] > :not(:last-child)
+	) {
+	border-color: var(--app-border);
+}
+
+.dark .app-theme :where([class*='dark:divide-gray-'] > :not(:last-child)),
+.dark .app-theme :where([class*='dark:divide-white/'] > :not(:last-child)) {
+	border-color: var(--app-border);
+}
+
+.app-theme :where([class~='h-px'][class*='bg-gray-'], [class~='h-px'][class*='bg-black/']) {
+	background: var(--app-divider);
+}
+
+.dark .app-theme :where([class~='h-px'][class*='dark:bg-white/']) {
+	background: var(--app-divider);
+}
+
+.app-theme
+	:where(
+		[class~='bg-gray-50'],
+		[class~='bg-gray-50/50'],
+		[class~='bg-gray-100'],
+		[class~='bg-gray-200/50']
+	) {
+	background: var(--app-hover);
+}
+
+.dark
+	.app-theme
+	:where(
+		[class~='dark:bg-white/3'],
+		[class~='dark:bg-white/4'],
+		[class~='dark:bg-white/5'],
+		[class~='dark:bg-white/6'],
+		[class~='dark:bg-white/8'],
+		[class~='dark:bg-white/10']
+	) {
+	background: var(--app-hover);
+}
+
+.app-theme
+	:where(
+		[class~='hover:bg-gray-50']:hover,
+		[class~='hover:bg-gray-100']:hover,
+		[class~='hover:bg-gray-200']:hover,
+		[class~='hover:bg-gray-200/60']:hover,
+		[class~='hover:bg-gray-200/70']:hover
+	) {
+	background: var(--app-active);
+}
+
+.dark
+	.app-theme
+	:where(
+		[class~='dark:hover:bg-white/3']:hover,
+		[class~='dark:hover:bg-white/4']:hover,
+		[class~='dark:hover:bg-white/5']:hover,
+		[class~='dark:hover:bg-white/6']:hover,
+		[class~='dark:hover:bg-white/8']:hover,
+		[class~='dark:hover:bg-white/10']:hover,
+		[class~='dark:hover:bg-white/12']:hover
+	) {
+	background: var(--app-active);
+}
+
+.app-theme
+	:where(
+		[class~='text-gray-950'],
+		[class~='text-gray-900'],
+		[class~='text-gray-800'],
+		[class~='text-gray-700']
+	) {
+	color: var(--app-fg);
+}
+
+.dark
+	.app-theme
+	:where(
+		[class~='dark:text-white'],
+		[class~='dark:text-gray-100'],
+		[class~='dark:text-gray-200'],
+		[class~='dark:text-gray-300']
+	) {
+	color: var(--app-fg);
+}
+
+.app-theme
+	:where(
+		[class~='text-gray-600'],
+		[class~='text-gray-500'],
+		[class~='text-gray-400'],
+		[class~='text-gray-300']
+	) {
+	color: var(--app-fg-muted);
+}
+
+.dark .app-theme :where([class~='dark:text-gray-400']) {
+	color: var(--app-fg-muted);
+}
+
+.dark .app-theme :where([class~='dark:text-gray-500'], [class~='dark:text-gray-600']) {
+	color: var(--app-fg-subtle);
+}
+
+.dark .app-theme :where([class~='dark:text-gray-700']) {
+	color: var(--app-fg-faint);
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: 100% 0;
+	}
+	100% {
+		background-position: -100% 0;
+	}
+}
+
+.shimmer {
+	background: linear-gradient(
+		110deg,
+		var(--app-fg-subtle) 0%,
+		var(--app-fg-subtle) 43%,
+		var(--app-fg) 50%,
+		var(--app-fg-subtle) 57%,
+		var(--app-fg-subtle) 100%
+	);
+	background-size: 200% 100%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	animation: shimmer 1.5s cubic-bezier(0.7, 0, 1, 0.4) infinite;
+	color: var(--app-fg-subtle);
+}
+
+.codespan {
+	padding: 0.15rem 0.3rem;
+	font-size: 0.85em;
+	@apply font-mono rounded-md mx-0.5;
+	background: var(--app-hover);
+	color: var(--app-fg);
+}
+
+.tippy-box[data-theme~='chat'] {
+	@apply rounded-lg text-xs border shadow-xl;
+	background: var(--app-surface);
+	color: var(--app-fg);
+	border-color: var(--app-border);
+}
+
+.app-input {
+	background: var(--app-hover);
+	color: var(--app-fg);
+	border: 1px solid var(--app-border);
+}
+
+.app-input::placeholder {
+	color: var(--app-fg-subtle);
+}
+
+.app-input:focus {
+	outline: none;
+	border-color: color-mix(in oklab, var(--app-fg) 28%, transparent);
+}
+
+.app-button {
+	background: var(--app-fg);
+	color: var(--app-bg);
+}
+
+.app-button:hover {
+	background: color-mix(in oklab, var(--app-fg) 88%, var(--app-bg));
+}
+
+.app-button:disabled {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.app-button-ghost {
+	color: var(--app-fg-muted);
+}
+
+.app-button-ghost:hover {
+	background: var(--app-hover);
+	color: var(--app-fg);
+}
+
+.app-button-ghost:disabled {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.app-button-danger {
+	background: color-mix(in oklab, #d64545 85%, var(--app-bg));
+	color: white;
+}
+
+.app-button-danger:hover {
+	background: #d64545;
+}
+
+.page-paper {
+	background: white;
+	box-shadow:
+		0 1px 2px rgb(0 0 0 / 0.2),
+		0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+.xterm .xterm-viewport {
+	scrollbar-width: thin;
+}
