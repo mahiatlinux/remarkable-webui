@@ -1,9 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { DeviceInput, DeviceState } from '$shared/types';
 import { useStore } from '$lib/store';
-import { activeDeviceId, devices } from '$lib/stores';
+import { activeDeviceId, devices, devicesLoaded } from '$lib/stores';
 import {
 	connectDevice,
 	createDevice,
@@ -31,14 +31,54 @@ const emptyDraft = (): Draft => ({
 	autoRestart: true
 });
 
+const field = 'app-input flex-1 min-w-0 h-8 px-3 rounded-full text-xs';
+
+function Step({
+	number,
+	title,
+	children
+}: {
+	number: number;
+	title: ReactNode;
+	children: ReactNode;
+}) {
+	return (
+		<li className="flex gap-3">
+			<span className="app-button flex items-center justify-center w-5 h-5 rounded-full text-[0.625rem] shrink-0">
+				{number}
+			</span>
+			<div className="min-w-0">
+				<div className="flex items-center gap-2 text-xs text-gray-900 dark:text-white">{title}</div>
+				<div className="text-[0.6875rem] text-gray-400 dark:text-gray-600 leading-relaxed">
+					{children}
+				</div>
+			</div>
+		</li>
+	);
+}
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+	return (
+		<div className="flex items-center gap-3">
+			<span className="w-20 shrink-0 text-xs text-gray-400 dark:text-gray-600">{label}</span>
+			<div className="flex flex-1 min-w-0 gap-2">{children}</div>
+		</div>
+	);
+}
+
 export default function DevicesView() {
 	const navigate = useNavigate();
 	const list = useStore(devices);
+	const loaded = useStore(devicesLoaded);
 	const active = useStore(activeDeviceId);
-	const [draft, setDraft] = useState<Draft | null>(list.length === 0 ? emptyDraft() : null);
+	const [draft, setDraft] = useState<Draft | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [usb, setUsb] = useState<boolean | null>(null);
 	const [removing, setRemoving] = useState<DeviceState | null>(null);
+
+	useEffect(() => {
+		if (loaded && list.length === 0) setDraft((current) => current ?? emptyDraft());
+	}, [loaded, list.length]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -105,9 +145,6 @@ export default function DevicesView() {
 			autoRestart: device.autoRestart
 		});
 	}
-
-	const field = 'app-input w-full h-8 px-3 rounded-full text-xs';
-	const labelClass = 'block text-[0.6875rem] text-gray-400 dark:text-gray-600 mb-1';
 
 	return (
 		<div className="h-full flex flex-col">
@@ -189,10 +226,10 @@ export default function DevicesView() {
 					)}
 
 					{draft ? (
-						<form onSubmit={save} className="flex flex-col gap-3">
-							<div className="flex items-center justify-between">
-								<h2 className="text-xs text-gray-400 dark:text-gray-600">
-									{draft.id ? 'Edit device' : 'Add a device'}
+						<form onSubmit={save} className="rounded-2xl border overflow-hidden">
+							<div className="flex items-center justify-between h-10 px-4 border-b">
+								<h2 className="text-xs text-gray-900 dark:text-white">
+									{draft.id ? 'Edit device' : 'New device'}
 								</h2>
 								{usb && draft.host !== USB_HOST && (
 									<button
@@ -204,72 +241,91 @@ export default function DevicesView() {
 									</button>
 								)}
 							</div>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-								<div>
-									<label className={labelClass}>Name</label>
+							{!draft.id && (
+								<ol className="flex flex-col gap-3 px-4 py-3.5 border-b">
+									<Step
+										number={1}
+										title={
+											<>
+												Plug in the USB cable
+												<span className={`status-dot ${usb ? 'connected' : ''}`}></span>
+												<span className="text-[0.6875rem] font-medium text-gray-400 dark:text-gray-600">
+													{usb ? 'Tablet found' : 'Nothing on USB yet'}
+												</span>
+											</>
+										}
+									>
+										The tablet always answers at {USB_HOST} over the cable. Wifi works too with the
+										address from Settings › Wi-Fi.
+									</Step>
+									<Step number={2} title="Make sure SSH is on">
+										reMarkable 1 and 2 have it on out of the box. Paper Pro and newer need Settings
+										› General › Software › Advanced › Developer mode, which resets the tablet.
+									</Step>
+									<Step number={3} title="Copy the root password">
+										It is at the bottom of Settings › General › Help › Copyrights and licenses.
+									</Step>
+								</ol>
+							)}
+							<div className="flex flex-col gap-2.5 px-4 py-3.5">
+								<Row label="Name">
 									<input
 										className={field}
 										value={draft.name}
 										placeholder="My reMarkable"
+										aria-label="Name"
 										onChange={(e) => setDraft({ ...draft, name: e.currentTarget.value })}
 									/>
-								</div>
-								<div>
-									<label className={labelClass}>Host</label>
+								</Row>
+								<Row label="Address">
 									<input
 										className={field}
 										value={draft.host}
 										placeholder={USB_HOST}
+										aria-label="Host"
 										required
 										onChange={(e) => setDraft({ ...draft, host: e.currentTarget.value })}
 									/>
-								</div>
-								<div>
-									<label className={labelClass}>Username</label>
 									<input
-										className={field}
-										value={draft.username}
-										onChange={(e) => setDraft({ ...draft, username: e.currentTarget.value })}
-									/>
-								</div>
-								<div>
-									<label className={labelClass}>Port</label>
-									<input
-										className={field}
+										className={`${field} flex-none w-20 text-center tabular-nums`}
 										type="number"
 										min={1}
 										max={65535}
 										value={draft.port}
+										aria-label="Port"
 										onChange={(e) => setDraft({ ...draft, port: Number(e.currentTarget.value) })}
 									/>
-								</div>
-								<div>
-									<label className={labelClass}>Password</label>
+								</Row>
+								<Row label="Login">
+									<input
+										className={`${field} flex-none w-28`}
+										value={draft.username}
+										aria-label="Username"
+										onChange={(e) => setDraft({ ...draft, username: e.currentTarget.value })}
+									/>
 									<input
 										className={field}
 										type="password"
 										value={draft.password ?? ''}
-										placeholder={draft.id ? 'Leave empty to keep' : 'From Settings > Help'}
+										placeholder={
+											draft.id ? 'Leave empty to keep the password' : 'Password from step 3'
+										}
+										aria-label="Password"
 										autoComplete="off"
 										onChange={(e) => setDraft({ ...draft, password: e.currentTarget.value })}
 									/>
-								</div>
-								<div>
-									<label className={labelClass}>Private key path (optional)</label>
+								</Row>
+								<Row label="Key file">
 									<input
 										className={field}
 										value={draft.keyPath ?? ''}
-										placeholder="~/.ssh/id_ed25519"
+										placeholder="~/.ssh/id_ed25519, optional instead of a password"
+										aria-label="Private key path"
 										onChange={(e) => setDraft({ ...draft, keyPath: e.currentTarget.value })}
 									/>
-								</div>
+								</Row>
 							</div>
-							<p className="text-[0.6875rem] text-gray-400 dark:text-gray-600 leading-relaxed">
-								The root password is under Settings › General › Help › Copyrights and licenses on
-								the tablet. Over USB the tablet is always {USB_HOST}. Over wifi use the address
-								shown in Settings › Wi-Fi. reMarkable Paper Pro needs developer mode enabled first.
-							</p>
-							<div className="flex justify-end gap-1.5">
+							<div className="flex justify-end gap-1.5 px-4 py-3 border-t">
 								{list.length > 0 && (
 									<button
 										type="button"
