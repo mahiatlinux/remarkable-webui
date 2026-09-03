@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import fixWebmDuration from 'fix-webm-duration';
 import type { ScreenError, ScreenMeta } from '$shared/types';
 import { useStore } from '$lib/store';
 import { activeDeviceId } from '$lib/stores';
@@ -10,6 +11,46 @@ import Spinner from '../common/Spinner';
 function wsUrl(path: string): string {
 	const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
 	return `${protocol}://${location.host}${path}`;
+}
+
+const RECORDING_TYPES = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+
+function timestamp(): string {
+	return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+function formatElapsed(ms: number): string {
+	const seconds = Math.floor(ms / 1000);
+	return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function renderFrame(
+	source: HTMLCanvasElement,
+	target: HTMLCanvasElement,
+	rotation: number,
+	invert: boolean
+) {
+	if (source.width === 0) return;
+	const rotated = rotation % 2 === 1;
+	const width = rotated ? source.height : source.width;
+	const height = rotated ? source.width : source.height;
+	if (target.width !== width || target.height !== height) {
+		target.width = width;
+		target.height = height;
+	}
+	const context = target.getContext('2d');
+	if (!context) return;
+	context.save();
+	context.translate(width / 2, height / 2);
+	context.rotate((rotation * Math.PI) / 2);
+	context.drawImage(source, -source.width / 2, -source.height / 2);
+	context.restore();
+	if (invert) {
+		context.globalCompositeOperation = 'difference';
+		context.fillStyle = '#fff';
+		context.fillRect(0, 0, width, height);
+		context.globalCompositeOperation = 'source-over';
+	}
 }
 
 function drawPacket(context: CanvasRenderingContext2D, packet: ArrayBuffer, meta: ScreenMeta) {
@@ -56,8 +97,14 @@ export default function ScreenView() {
 	const [fullscreen, setFullscreen] = useState(false);
 	const [generation, setGeneration] = useState(0);
 	const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
+	const [recordingSince, setRecordingSince] = useState<number | null>(null);
+	const [elapsed, setElapsed] = useState(0);
 	const pausedRef = useRef(false);
 	pausedRef.current = paused;
+	const invertRef = useRef(false);
+	invertRef.current = invert;
+	const recorder = useRef<MediaRecorder | null>(null);
+	const frameLoop = useRef(0);
 
 	useEffect(() => {
 		const element = area.current;
@@ -142,14 +189,71 @@ export default function ScreenView() {
 		void document.documentElement.requestFullscreen?.().catch(() => {});
 	}
 
-	function snapshot() {
-		canvas.current?.toBlob((blob) => {
-			if (!blob) return;
-			const url = URL.createObjectURL(blob);
-			downloadUrl(url, `remarkable-${new Date().toISOString().replace(/[:.]/g, '-')}.png`);
-			URL.revokeObjectURL(url);
-		});
+	function saveBlob(blob: Blob, extension: string) {
+		const url = URL.createObjectURL(blob);
+		downloadUrl(url, `remarkable-${timestamp()}.${extension}`);
+		URL.revokeObjectURL(url);
 	}
+
+	function snapshot() {
+		const source = canvas.current;
+		if (!source) return;
+		const frame = document.createElement('canvas');
+		renderFrame(source, frame, rotation, invert);
+		frame.toBlob((blob) => blob && saveBlob(blob, 'png'));
+	}
+
+	function startRecording() {
+		const source = canvas.current;
+		const mimeType = RECORDING_TYPES.find((type) => MediaRecorder.isTypeSupported(type));
+		if (!source || !mimeType) {
+			setError('This browser cannot record video');
+			return;
+		}
+		const frame = document.createElement('canvas');
+		const startRotation = rotation;
+		renderFrame(source, frame, startRotation, invertRef.current);
+		const media = new MediaRecorder(frame.captureStream(60), {
+			mimeType,
+			videoBitsPerSecond: 8_000_000
+		});
+		const chunks: Blob[] = [];
+		const startedAt = Date.now();
+		media.ondataavailable = (event) => event.data.size && chunks.push(event.data);
+		media.onstop = () => {
+			frame
+				.captureStream()
+				.getTracks()
+				.forEach((track) => track.stop());
+			fixWebmDuration(new Blob(chunks, { type: mimeType }), Date.now() - startedAt, {
+				logger: false
+			}).then((blob) => saveBlob(blob, 'webm'));
+		};
+		const draw = () => {
+			if (canvas.current) renderFrame(canvas.current, frame, startRotation, invertRef.current);
+			frameLoop.current = requestAnimationFrame(draw);
+		};
+		frameLoop.current = requestAnimationFrame(draw);
+		media.start(1000);
+		recorder.current = media;
+		setRecordingSince(startedAt);
+	}
+
+	function stopRecording() {
+		cancelAnimationFrame(frameLoop.current);
+		recorder.current?.stop();
+		recorder.current = null;
+		setRecordingSince(null);
+	}
+
+	useEffect(() => {
+		if (recordingSince === null) return;
+		setElapsed(0);
+		const timer = setInterval(() => setElapsed(Date.now() - recordingSince), 500);
+		return () => clearInterval(timer);
+	}, [recordingSince]);
+
+	useEffect(() => () => stopRecording(), []);
 
 	const rotated = rotation % 2 === 1;
 	const frameWidth = meta ? (rotated ? meta.height : meta.width) : 0;
@@ -212,6 +316,19 @@ export default function ScreenView() {
 					</span>
 				)}
 				<div className="ml-auto flex items-center gap-0.5">
+					{recordingSince !== null && (
+						<span className="flex items-center gap-1.5 mr-1 text-xs tabular-nums text-red-500">
+							<span className="status-dot error connecting"></span>
+							{formatElapsed(elapsed)}
+						</span>
+					)}
+					<ToolButton
+						icon={<Icon name={recordingSince === null ? 'record' : 'stop'} size={14} />}
+						label={recordingSince === null ? 'Record video' : 'Stop recording'}
+						active={recordingSince !== null}
+						onclick={recordingSince === null ? startRecording : stopRecording}
+						disabled={!meta}
+					/>
 					<ToolButton
 						icon={<Icon name="rotate" size={14} />}
 						label="Rotate (r)"

@@ -399,6 +399,13 @@ const ICONS: Record<string, ReactNode> = {
 		</>
 	),
 	dot: <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />,
+	record: (
+		<>
+			<circle cx="12" cy="12" r="9" />
+			<circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+		</>
+	),
+	stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
 	heart: (
 		<path
 			d="M12 21s-6.7-4.4-9.3-8.6C.6 9 2.2 4.8 6 4.2c2-.3 3.9.6 5 2.2 1.1-1.6 3-2.5 5-2.2 3.8.6 5.4 4.8 3.3 8.2C18.7 16.6 12 21 12 21z"

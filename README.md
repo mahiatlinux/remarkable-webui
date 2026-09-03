@@ -79,6 +79,8 @@ xochitl, the tablet's interface, only reads document metadata at startup. After 
 
 On first use the app copies a small static helper (`tools/rmfb.c`, prebuilt in `server/bin/` for aarch64 and armv7) to `/home/root/.cache/remarkable-webui/` on the tablet. It reads the framebuffer 25 times a second and streams only the rows that changed, run-length encoded, so a stroke costs a few kilobytes and a full refresh about 50 KB. Press `f` for full screen, `r` to rotate, `i` to invert.
 
+Screenshots and recordings are rendered in the browser from the mirrored canvas with the chosen rotation and inversion applied, so they cost the tablet nothing extra. Recordings are WebM (VP9 where available) captured at up to 60 frames per second with a proper duration header.
+
 Rebuild the helper with zig: `zig cc -target aarch64-linux-musl -O2 -static -s -o server/bin/rmfb-aarch64 tools/rmfb.c` (and `arm-linux-musleabihf` for `rmfb-armv7l`).
 
 ## Templates
