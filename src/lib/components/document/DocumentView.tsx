@@ -16,6 +16,25 @@ import { openPdf, type PDFDocumentProxy } from './pdf';
 
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3];
 
+function PageThumb({ src, ratio }: { src: string; ratio: number }) {
+	const [aspect, setAspect] = useState(ratio);
+	return (
+		<div className="page-paper w-full overflow-hidden" style={{ aspectRatio: aspect }}>
+			<img
+				src={src}
+				alt=""
+				loading="lazy"
+				draggable={false}
+				className="w-full h-full object-contain"
+				onLoad={(event) =>
+					setAspect(event.currentTarget.naturalWidth / event.currentTarget.naturalHeight)
+				}
+				onError={(event) => (event.currentTarget.style.visibility = 'hidden')}
+			/>
+		</div>
+	);
+}
+
 export default function DocumentView() {
 	const { id = '' } = useParams();
 	const navigate = useNavigate();
@@ -235,19 +254,10 @@ export default function DocumentView() {
 							}`}
 							onClick={() => setIndex(i)}
 						>
-							<div
-								className="page-paper w-full overflow-hidden"
-								style={{ aspectRatio: `${detail.paperSize[0]} / ${detail.paperSize[1]}` }}
-							>
-								<img
-									src={thumbnailUrl(id, entry.id)}
-									alt=""
-									loading="lazy"
-									className="w-full h-full object-cover"
-									draggable={false}
-									onError={(event) => (event.currentTarget.style.visibility = 'hidden')}
-								/>
-							</div>
+							<PageThumb
+								src={thumbnailUrl(id, entry.id)}
+								ratio={detail.paperSize[0] / detail.paperSize[1]}
+							/>
 							<span className="text-[0.625rem] app-muted tabular-nums">{i + 1}</span>
 						</button>
 					))}

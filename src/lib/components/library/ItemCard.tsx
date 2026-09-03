@@ -67,7 +67,7 @@ export default function ItemCard({
 			alt=""
 			loading="lazy"
 			draggable={false}
-			className="w-full h-full object-cover"
+			className="w-full h-full object-contain"
 			onError={() => setThumbFailed(true)}
 		/>
 	) : (
