@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import { useEffect, type MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { activeDeviceId, developerNavOpen, library, sidebarOpen } from '$lib/stores';
 import { useStore } from '$lib/store';
@@ -52,7 +52,9 @@ export default function SidebarNav({ onopensearch }: Props) {
 	const items = useStore(library);
 	const developerOpen = useStore(developerNavOpen);
 	const inDeveloper = DEVELOPER_NAV.some((entry) => location.pathname.startsWith(entry.path));
-	const showDeveloper = developerOpen || inDeveloper;
+	useEffect(() => {
+		if (inDeveloper) developerNavOpen.set(true);
+	}, [inDeveloper]);
 	const pinned = [...items.values()]
 		.filter((item) => item.pinned && item.parent !== 'trash')
 		.sort((a, b) => a.name.localeCompare(b.name));
@@ -110,13 +112,13 @@ export default function SidebarNav({ onopensearch }: Props) {
 					className={`sidebar-nav-link flex items-center gap-1 w-full h-6 px-2 rounded-full text-[0.625rem] transition-colors duration-100 ${
 						active ? '' : 'opacity-40 pointer-events-none'
 					}`}
-					onClick={() => developerNavOpen.set(!showDeveloper)}
-					aria-expanded={showDeveloper}
+					onClick={() => developerNavOpen.set(!developerOpen)}
+					aria-expanded={developerOpen}
 				>
-					<Icon name={showDeveloper ? 'chevron-down' : 'chevron-right'} size={11} />
+					<Icon name={developerOpen ? 'chevron-down' : 'chevron-right'} size={11} />
 					<span className="flex-1 text-left">Developer</span>
 				</button>
-				{showDeveloper && (
+				{developerOpen && (
 					<div className="flex flex-col gap-px mt-px">
 						{DEVELOPER_NAV.map((entry) => (
 							<a
