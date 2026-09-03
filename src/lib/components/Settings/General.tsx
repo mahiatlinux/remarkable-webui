@@ -67,8 +67,9 @@ export default function General() {
 							<ToggleSwitch value={current.autoRestart} onchange={setAutoRestart} />
 						</label>
 						<p className="text-[0.6875rem] text-gray-400 dark:text-gray-600 mt-1">
-							The tablet only notices renamed, moved or uploaded documents after its interface
-							restarts. The restart takes a few seconds and closes the open notebook.
+							The tablet only notices renamed, moved or deleted items and new folders or notebooks
+							after its interface restarts. The restart takes a few seconds and closes the open
+							notebook.
 						</p>
 					</>
 				)}

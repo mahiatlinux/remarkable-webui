@@ -15,7 +15,7 @@ import { allStates, dropSession, getSession, type Session } from './session';
 import * as xochitl from './xochitl';
 import * as rmdoc from './rmdoc';
 import * as fs from './fs';
-import { proxyDownload, webInterfaceReachable } from './webui';
+import { proxyDownload, uploadDocument, webInterfaceReachable } from './webui';
 import { runAction, systemInfo } from './system';
 import {
 	addTemplate,
@@ -106,7 +106,7 @@ function baseName(filename: string): string {
 }
 
 async function stageTemp(stream: Readable): Promise<string> {
-	const target = path.join(tmpdir(), `remarkable-webui-${randomUUID()}.zip`);
+	const target = path.join(tmpdir(), `remarkable-webui-${randomUUID()}`);
 	await pipeline(stream, createWriteStream(target));
 	return target;
 }
@@ -162,30 +162,25 @@ device.post('/library/purge', async (req, res) => {
 device.post('/library/upload', async (req, res) => {
 	const current = session(req);
 	const parent = typeof req.query.parent === 'string' ? req.query.parent : '';
-	xochitl.assertParent(parent);
-	const created: UploadResult['created'] = [];
+	if (parent) xochitl.assertId(parent);
+	const uploaded: string[] = [];
 	await parseUpload(req, async (filename, stream) => {
 		const ext = extension(filename);
-		const name = baseName(filename);
-		if (ext === 'pdf' || ext === 'epub') {
-			created.push({ id: await xochitl.createDocument(current, name, parent, ext, stream), name });
-			return;
+		if (ext !== 'pdf' && ext !== 'epub' && ext !== 'rmdoc') {
+			throw new HttpError(
+				400,
+				`Unsupported file type: ${filename}. Upload PDF, EPUB or rmdoc files.`
+			);
 		}
-		if (ext === 'rmdoc' || ext === 'zip') {
-			const temp = await stageTemp(stream);
-			try {
-				for (const id of await rmdoc.importRmdoc(current, temp, parent)) created.push({ id, name });
-			} finally {
-				await unlink(temp).catch(() => {});
-			}
-			return;
+		const temp = await stageTemp(stream);
+		try {
+			await uploadDocument(current, parent, filename, temp);
+		} finally {
+			await unlink(temp).catch(() => {});
 		}
-		throw new HttpError(
-			400,
-			`Unsupported file type: ${filename}. Upload PDF, EPUB or rmdoc files.`
-		);
+		uploaded.push(filename);
 	});
-	res.status(201).json({ created } satisfies UploadResult);
+	res.status(201).json({ uploaded } satisfies UploadResult);
 });
 
 device.get('/documents/:doc', async (req, res) => {

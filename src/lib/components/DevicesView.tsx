@@ -265,6 +265,10 @@ export default function DevicesView() {
 									<Step number={3} title="Copy the root password">
 										It is at the bottom of Settings › General › Help › Copyrights and licenses.
 									</Step>
+									<Step number={4} title="Turn on the USB web interface">
+										Settings › Storage › USB web interface. Uploads and PDF export go through it, so
+										the tablet imports documents live without restarting.
+									</Step>
 								</ol>
 							)}
 							<div className="flex flex-col gap-2.5 px-4 py-3.5">

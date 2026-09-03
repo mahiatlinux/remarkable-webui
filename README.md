@@ -65,11 +65,13 @@ Tagged releases ship a tarball with the client already built. Unpack it, run `np
 
 ## How changes reach the tablet
 
-xochitl, the tablet's interface, only reads document metadata at startup. After a rename, move, upload or delete the app therefore restarts xochitl on the tablet (about two seconds, the open notebook closes). Turn this off per device in Settings › General to batch changes and restart manually from the sidebar.
+Uploads go through the tablet's own USB web interface, tunnelled over the SSH connection, so xochitl imports PDF, EPUB and rmdoc files live the same way the official web app does. That needs "USB web interface" enabled under Settings › Storage on the tablet.
+
+xochitl only reads document metadata at startup, so after a rename, move, delete, or a new folder or notebook the app restarts it on the tablet (about two seconds, the open notebook closes). Turn this off per device in Settings › General to batch changes and restart manually from the sidebar.
 
 ## Exporting PDF
 
-"Download PDF" asks the tablet itself to render the document through its USB web interface, tunnelled over the SSH connection. That needs the USB cable connected and "USB web interface" enabled under Settings › Storage. rmdoc and SVG exports do not depend on it.
+"Download PDF" asks the tablet itself to render the document through the same USB web interface. rmdoc and SVG exports do not depend on it.
 
 ## Screen mirror
 

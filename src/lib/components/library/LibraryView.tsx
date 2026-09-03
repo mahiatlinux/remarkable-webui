@@ -198,7 +198,7 @@ export default function LibraryView() {
 		})
 			.then((result) => {
 				toast.success(
-					`Uploaded ${result.created.length} document${result.created.length === 1 ? '' : 's'}`,
+					`Uploaded ${result.uploaded.length} document${result.uploaded.length === 1 ? '' : 's'}`,
 					{
 						id
 					}

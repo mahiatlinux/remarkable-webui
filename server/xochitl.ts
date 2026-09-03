@@ -1,6 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { pipeline } from 'node:stream/promises';
-import type { Readable } from 'node:stream';
 import type { DocumentDetail, DocumentPage, LibraryItem, LibraryItemType } from '../shared/types';
 import { HttpError, shellQuote } from './http';
 import type { Session } from './session';
@@ -286,28 +284,6 @@ function newMetadata(name: string, parent: string, type: Metadata['type']): Meta
 	};
 }
 
-function newContent(fileType: 'notebook' | 'pdf' | 'epub', pages: string[]) {
-	return {
-		coverPageNumber: 0,
-		documentMetadata: {},
-		dummyDocument: false,
-		extraMetadata: {},
-		fileType,
-		fontName: '',
-		formatVersion: 1,
-		lineHeight: -1,
-		margins: 125,
-		orientation: 'portrait',
-		pageCount: pages.length,
-		pages,
-		pageTags: [],
-		tags: [],
-		textAlignment: 'justify',
-		textScale: 1,
-		zoomMode: 'bestFit'
-	};
-}
-
 export async function createFolder(
 	session: Session,
 	name: string,
@@ -380,36 +356,4 @@ export async function createNotebook(
 	await writeJson(session, `${XOCHITL_DIR}/${id}.local`, { contentFormatVersion: 2 });
 	session.scheduleRestart();
 	return id;
-}
-
-export async function createDocument(
-	session: Session,
-	name: string,
-	parent: string,
-	fileType: 'pdf' | 'epub',
-	stream: Readable
-): Promise<string> {
-	assertParent(parent);
-	const id = randomUUID();
-	const sftp = await session.sftp();
-	await pipeline(stream, sftp.createWriteStream(`${XOCHITL_DIR}/${id}.${fileType}`));
-	await writeJson(session, `${XOCHITL_DIR}/${id}.content`, newContent(fileType, []));
-	await session.writeFile(`${XOCHITL_DIR}/${id}.pagedata`, '');
-	await writeJson(
-		session,
-		`${XOCHITL_DIR}/${id}.metadata`,
-		newMetadata(name, parent, 'DocumentType')
-	);
-	session.scheduleRestart();
-	return id;
-}
-
-export async function ensureDir(session: Session, path: string) {
-	const sftp = await session.sftp();
-	await new Promise<void>((resolve, reject) => {
-		sftp.mkdir(path, (error) => {
-			if (!error || (error as Error & { code?: number }).code === 4) resolve();
-			else reject(new HttpError(502, `Cannot create ${path}: ${error.message}`));
-		});
-	});
 }

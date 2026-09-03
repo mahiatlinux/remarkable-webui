@@ -148,7 +148,7 @@ export interface ScreenError {
 }
 
 export interface UploadResult {
-	created: { id: string; name: string }[];
+	uploaded: string[];
 }
 
 export type ServerEvent =
