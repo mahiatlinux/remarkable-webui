@@ -477,7 +477,11 @@ export default function LibraryView() {
 							.map((group) => (
 								<div
 									key={group[0].type === 'folder' ? 'folders' : 'documents'}
-									className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]"
+									className={`grid gap-2 ${
+										group[0].type === 'folder'
+											? 'grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]'
+											: 'grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]'
+									}`}
 								>
 									{group.map((item) => (
 										<ItemCard

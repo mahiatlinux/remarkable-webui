@@ -20,7 +20,7 @@ interface Props {
 
 function FolderGlyph() {
 	return (
-		<svg viewBox="0 0 64 52" className="w-[68%] h-auto" style={{ color: 'var(--app-fg-subtle)' }}>
+		<svg viewBox="0 0 64 52" className="w-9 shrink-0" style={{ color: 'var(--app-fg-subtle)' }}>
 			<path
 				d="M0 10a4 4 0 0 1 4-4h17a4 4 0 0 1 2.8 1.2L28 12h32a4 4 0 0 1 4 4v30a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4z"
 				fill="currentColor"
@@ -53,6 +53,7 @@ export default function ItemCard({
 	const [dropping, setDropping] = useState(false);
 	const isFolder = item.type === 'folder';
 	const showThumb = thumbnails && !isFolder && item.coverPageId && !thumbFailed;
+	const modified = item.lastModified ? ` · ${formatRelative(item.lastModified)}` : '';
 
 	function allowDrop(event: DragEvent) {
 		if (!isFolder || !event.dataTransfer.types.includes(ITEMS_MIME)) return;
@@ -73,37 +74,23 @@ export default function ItemCard({
 		? 'bg-gray-200/60 dark:bg-white/10 ring-1 ring-gray-300 dark:ring-white/15'
 		: 'hover:bg-gray-100 dark:hover:bg-white/5';
 	const dropClass = dropping ? 'ring-2 ring-gray-400 dark:ring-white/40' : '';
-
-	const thumb = isFolder ? (
-		<FolderGlyph />
-	) : showThumb ? (
-		<img
-			src={thumbnailUrl(item.id, item.coverPageId!)}
-			alt=""
-			loading="lazy"
-			draggable={false}
-			className="w-full h-full object-contain"
-			onError={() => setThumbFailed(true)}
-		/>
-	) : (
-		<div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
-			<Icon name={itemIcon(item.type)} size={22} />
-		</div>
-	);
+	const itemProps = {
+		draggable: true,
+		onDragStart: ondragstart,
+		onDragOver: allowDrop,
+		onDragLeave: () => setDropping(false),
+		onDrop: drop,
+		onClick: onselect,
+		onDoubleClick: onopen,
+		onContextMenu: oncontextmenu,
+		'data-item-id': item.id
+	};
 
 	if (view === 'list') {
 		return (
 			<div
 				className={`group grid grid-cols-[minmax(0,1fr)_5rem_4rem_6rem_5rem] items-center gap-3 h-8 px-2 rounded-xl text-xs cursor-default select-none ${selectedClass} ${dropClass}`}
-				draggable
-				onDragStart={ondragstart}
-				onDragOver={allowDrop}
-				onDragLeave={() => setDropping(false)}
-				onDrop={drop}
-				onClick={onselect}
-				onDoubleClick={onopen}
-				onContextMenu={oncontextmenu}
-				data-item-id={item.id}
+				{...itemProps}
 			>
 				<span className="flex items-center gap-2 min-w-0">
 					<Icon name={itemIcon(item.type)} size={14} class="app-icon-muted" />
@@ -120,27 +107,48 @@ export default function ItemCard({
 		);
 	}
 
+	if (isFolder) {
+		return (
+			<div
+				className={`group flex items-center gap-2.5 px-2 py-1.5 rounded-xl cursor-default select-none transition-colors duration-75 ${selectedClass} ${dropClass}`}
+				{...itemProps}
+			>
+				<FolderGlyph />
+				<div className="min-w-0 flex-1 mt-1.5">
+					<div className="text-xs text-gray-900 dark:text-white truncate" title={item.name}>
+						{item.name}
+					</div>
+					<div className="text-[0.625rem] text-gray-400 dark:text-gray-600 truncate">
+						Folder{modified}
+					</div>
+				</div>
+				{item.pinned && <Icon name="pin" size={11} class="app-icon-muted" />}
+			</div>
+		);
+	}
+
 	return (
 		<div
 			className={`group flex flex-col gap-1.5 p-2 rounded-xl border cursor-default select-none transition-colors duration-75 ${selectedClass} ${dropClass}`}
-			draggable
-			onDragStart={ondragstart}
-			onDragOver={allowDrop}
-			onDragLeave={() => setDropping(false)}
-			onDrop={drop}
-			onClick={onselect}
-			onDoubleClick={onopen}
-			onContextMenu={oncontextmenu}
-			data-item-id={item.id}
+			{...itemProps}
 		>
 			<div
-				className={`relative w-full ${
-					isFolder
-						? 'aspect-[4/3] flex items-center justify-center'
-						: `aspect-[3/4] rounded-lg overflow-hidden ${showThumb ? 'page-paper' : 'bg-gray-100 dark:bg-white/5'}`
-				}`}
+				className={`relative w-full aspect-[3/4] rounded-lg overflow-hidden ${showThumb ? 'page-paper' : 'bg-gray-100 dark:bg-white/5'}`}
 			>
-				{thumb}
+				{showThumb ? (
+					<img
+						src={thumbnailUrl(item.id, item.coverPageId!)}
+						alt=""
+						loading="lazy"
+						draggable={false}
+						className="w-full h-full object-contain"
+						onError={() => setThumbFailed(true)}
+					/>
+				) : (
+					<div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+						<Icon name={itemIcon(item.type)} size={22} />
+					</div>
+				)}
 				{item.pinned && (
 					<span className="absolute top-1 right-1 flex items-center justify-center w-5 h-5 rounded-full bg-black/50 text-white">
 						<Icon name="pin" size={10} />
@@ -155,8 +163,7 @@ export default function ItemCard({
 					{item.name}
 				</div>
 				<div className="text-[0.625rem] text-gray-400 dark:text-gray-600 mt-0.5 truncate">
-					{isFolder ? 'Folder' : `${item.pageCount || '–'} pages`}
-					{item.lastModified ? ` · ${formatRelative(item.lastModified)}` : ''}
+					{item.pageCount || '–'} pages{modified}
 				</div>
 			</div>
 		</div>
