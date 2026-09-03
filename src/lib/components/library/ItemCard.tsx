@@ -18,6 +18,19 @@ interface Props {
 	ondropitems: (ids: string[]) => void;
 }
 
+function FolderGlyph() {
+	return (
+		<svg viewBox="0 0 64 52" className="w-[68%] h-auto" style={{ color: 'var(--app-fg-subtle)' }}>
+			<path
+				d="M0 10a4 4 0 0 1 4-4h17a4 4 0 0 1 2.8 1.2L28 12h32a4 4 0 0 1 4 4v30a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4z"
+				fill="currentColor"
+				opacity="0.7"
+			/>
+			<rect y="18" width="64" height="32" rx="4" fill="currentColor" />
+		</svg>
+	);
+}
+
 const TYPE_LABEL: Record<LibraryItem['type'], string> = {
 	folder: 'Folder',
 	notebook: 'Notebook',
@@ -61,7 +74,9 @@ export default function ItemCard({
 		: 'hover:bg-gray-100 dark:hover:bg-white/5';
 	const dropClass = dropping ? 'ring-2 ring-gray-400 dark:ring-white/40' : '';
 
-	const thumb = showThumb ? (
+	const thumb = isFolder ? (
+		<FolderGlyph />
+	) : showThumb ? (
 		<img
 			src={thumbnailUrl(item.id, item.coverPageId!)}
 			alt=""
@@ -72,7 +87,7 @@ export default function ItemCard({
 		/>
 	) : (
 		<div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
-			<Icon name={itemIcon(item.type)} size={isFolder ? 28 : 22} />
+			<Icon name={itemIcon(item.type)} size={22} />
 		</div>
 	);
 
@@ -119,8 +134,10 @@ export default function ItemCard({
 			data-item-id={item.id}
 		>
 			<div
-				className={`relative w-full aspect-[3/4] rounded-lg overflow-hidden ${
-					showThumb ? 'page-paper' : 'bg-gray-100 dark:bg-white/5'
+				className={`relative w-full ${
+					isFolder
+						? 'aspect-[4/3] flex items-center justify-center'
+						: `aspect-[3/4] rounded-lg overflow-hidden ${showThumb ? 'page-paper' : 'bg-gray-100 dark:bg-white/5'}`
 				}`}
 			>
 				{thumb}

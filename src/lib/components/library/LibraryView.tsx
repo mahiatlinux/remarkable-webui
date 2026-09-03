@@ -468,21 +468,33 @@ export default function LibraryView() {
 						hint={inTrash ? undefined : 'Drop PDF, EPUB or rmdoc files anywhere to upload them.'}
 					/>
 				) : view === 'grid' ? (
-					<div className="grid gap-2 p-3 grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]">
-						{children.map((item) => (
-							<ItemCard
-								key={item.id}
-								item={item}
-								view="grid"
-								thumbnails={thumbnails}
-								selected={selected.has(item.id)}
-								onselect={(event) => select(item, event)}
-								onopen={() => open(item)}
-								oncontextmenu={(event) => contextMenu(event, item)}
-								ondragstart={(event) => startDrag(item, event)}
-								ondropitems={(ids) => void moveTo(ids, item.id)}
-							/>
-						))}
+					<div className="p-3 flex flex-col gap-3">
+						{[
+							children.filter((item) => item.type === 'folder'),
+							children.filter((item) => item.type !== 'folder')
+						]
+							.filter((group) => group.length > 0)
+							.map((group) => (
+								<div
+									key={group[0].type === 'folder' ? 'folders' : 'documents'}
+									className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]"
+								>
+									{group.map((item) => (
+										<ItemCard
+											key={item.id}
+											item={item}
+											view="grid"
+											thumbnails={thumbnails}
+											selected={selected.has(item.id)}
+											onselect={(event) => select(item, event)}
+											onopen={() => open(item)}
+											oncontextmenu={(event) => contextMenu(event, item)}
+											ondragstart={(event) => startDrag(item, event)}
+											ondropitems={(ids) => void moveTo(ids, item.id)}
+										/>
+									))}
+								</div>
+							))}
 					</div>
 				) : (
 					<div className="p-2">
