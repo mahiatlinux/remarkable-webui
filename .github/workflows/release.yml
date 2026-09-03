@@ -1,0 +1,38 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Check that the tag matches package.json
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "package.json is $version but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - name: Pack
+        run: |
+          name="remarkable-webui-$GITHUB_REF_NAME"
+          mkdir -p "$name"
+          cp -r dist server shared tools package.json package-lock.json README.md "$name"/
+          tar -czf "$name.tar.gz" "$name"
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "remarkable-webui-$GITHUB_REF_NAME.tar.gz" --generate-notes

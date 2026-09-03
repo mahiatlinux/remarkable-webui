@@ -61,6 +61,8 @@ npm start
 
 `npm start` serves the built client and the API from the same port (8787, or `PORT`).
 
+Tagged releases ship a tarball with the client already built. Unpack it, run `npm ci --omit=dev`, then `npm start`.
+
 ## How changes reach the tablet
 
 xochitl, the tablet's interface, only reads document metadata at startup. After a rename, move, upload or delete the app therefore restarts xochitl on the tablet (about two seconds, the open notebook closes). Turn this off per device in Settings › General to batch changes and restart manually from the sidebar.
