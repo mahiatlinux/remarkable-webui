@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { TemplateInfo } from '$shared/types';
-import { getTemplateDocument, templateFileUrl } from '$lib/apis/system';
+import { getTemplateDocument, templateFileUrl, templateSourceUrl } from '$lib/apis/system';
 import { templateSvg } from '$lib/templates/render';
 import Icon from '../Icon';
 import Spinner from '../common/Spinner';
@@ -23,7 +23,7 @@ export default function TemplatePreview({ template, className }: Props) {
 	useEffect(() => {
 		if (template.file !== 'template') return;
 		let cancelled = false;
-		getTemplateDocument(template.filename)
+		getTemplateDocument(templateSourceUrl(template))
 			.then((doc) => {
 				const [width, height] = paperFor(template);
 				if (!cancelled) setSvg(templateSvg(doc, width, height));

@@ -69,6 +69,12 @@ Rebuild the helper with zig: `zig cc -target aarch64-linux-musl -O2 -static -s -
 
 Firmware 3.27 ships templates as `.template` JSON files (paths, groups with repeat rules, text, and arithmetic expressions). The app evaluates that format itself, both behind notebook pages and in the template gallery. Older firmware with `.svg` and `.png` templates is served as images.
 
+## Custom templates
+
+Since firmware 3.17 the tablet loads custom templates from its document store, the same way reMarkable's own Methods templates arrive: a `.template` JSON file next to a `.metadata` file with `"type": "TemplateType"` and an empty `.content`, all in `/home/root/.local/share/remarkable/xochitl`. That directory is writable and survives software updates, so nothing on the read-only root partition changes.
+
+The Templates page adds `.template` files this way, shows them with a Custom tag, and can edit their JSON in place or delete them. On upload the app sets the name, categories and orientation you choose and fills in `formatVersion`, `labels` and `supportedScreens` when the file lacks them, then restarts xochitl. Any built-in template can be downloaded as a `.template` file from its preview to use as a starting point. PNG and SVG images are not supported by this mechanism.
+
 ## Scripts
 
 - `npm run dev` start backend and frontend with reload

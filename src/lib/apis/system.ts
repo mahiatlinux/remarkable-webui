@@ -1,4 +1,10 @@
-import type { SystemAction, SystemInfo, TemplateFile, TemplateInfo } from '$shared/types';
+import type {
+	SystemAction,
+	SystemInfo,
+	TemplateFile,
+	TemplateInfo,
+	TemplateInput
+} from '$shared/types';
 import type { TemplateDocument } from '$lib/templates/render';
 import { devicePath, json, request } from './client';
 
@@ -22,15 +28,36 @@ export function templateFileUrl(filename: string, ext: TemplateFile): string {
 	return devicePath(`/templates/file/${encodeURIComponent(`${filename}.${ext}`)}`);
 }
 
+export function templateSourceUrl(template: TemplateInfo): string {
+	return template.id
+		? devicePath(`/templates/custom/${encodeURIComponent(template.id)}`)
+		: templateFileUrl(template.filename, 'template');
+}
+
 const templateDocuments = new Map<string, Promise<TemplateDocument>>();
 
-export function getTemplateDocument(filename: string): Promise<TemplateDocument> {
-	const key = templateFileUrl(filename, 'template');
-	let pending = templateDocuments.get(key);
+export function getTemplateDocument(url: string): Promise<TemplateDocument> {
+	let pending = templateDocuments.get(url);
 	if (!pending) {
-		pending = request<TemplateDocument>(key);
-		pending.catch(() => templateDocuments.delete(key));
-		templateDocuments.set(key, pending);
+		pending = request<TemplateDocument>(url);
+		pending.catch(() => templateDocuments.delete(url));
+		templateDocuments.set(url, pending);
 	}
 	return pending;
+}
+
+export function forgetTemplateDocument(url: string) {
+	templateDocuments.delete(url);
+}
+
+export function addTemplate(input: TemplateInput): Promise<TemplateInfo> {
+	return json<TemplateInfo>(devicePath('/templates'), 'POST', input);
+}
+
+export function updateTemplate(id: string, source: string) {
+	return json<void>(devicePath(`/templates/custom/${encodeURIComponent(id)}`), 'PUT', { source });
+}
+
+export function deleteTemplate(id: string) {
+	return json<void>(devicePath(`/templates/custom/${encodeURIComponent(id)}`), 'DELETE');
 }

@@ -17,7 +17,14 @@ import * as rmdoc from './rmdoc';
 import * as fs from './fs';
 import { proxyDownload, webInterfaceReachable } from './webui';
 import { runAction, systemInfo } from './system';
-import { listTemplates, templateFile } from './templates';
+import {
+	addTemplate,
+	customTemplateFile,
+	listTemplates,
+	removeTemplate,
+	templateFile,
+	updateTemplate
+} from './templates';
 
 export const router = Router();
 
@@ -308,6 +315,33 @@ device.get('/templates/file/:name', async (req, res) => {
 	);
 	res.setHeader('Cache-Control', 'private, max-age=3600');
 	res.end(data);
+});
+
+device.get('/templates/custom/:template', async (req, res) => {
+	const data = await customTemplateFile(session(req), req.params.template);
+	res.setHeader('Content-Type', 'application/json');
+	res.setHeader('Cache-Control', 'no-store');
+	res.end(data);
+});
+
+device.post('/templates', async (req, res) => {
+	const created = await addTemplate(session(req), {
+		name: bodyString(req.body, 'name'),
+		categories: bodyStringArray(req.body, 'categories'),
+		landscape: Boolean(req.body?.landscape),
+		source: bodyString(req.body, 'source')
+	});
+	res.status(201).json(created);
+});
+
+device.put('/templates/custom/:template', async (req, res) => {
+	await updateTemplate(session(req), req.params.template, bodyString(req.body, 'source'));
+	res.status(204).end();
+});
+
+device.delete('/templates/custom/:template', async (req, res) => {
+	await removeTemplate(session(req), req.params.template);
+	res.status(204).end();
 });
 
 export function sendError(error: Error, res: Response) {

@@ -30,7 +30,7 @@ export default function NewNotebookDialog({ onsubmit, onclose }: Props) {
 
 	useEffect(() => {
 		getTemplates()
-			.then(setTemplates)
+			.then((list) => setTemplates(list.filter((template) => !template.id)))
 			.catch((err: Error) => {
 				setTemplates([]);
 				setError(err.message);
@@ -76,14 +76,12 @@ export default function NewNotebookDialog({ onsubmit, onclose }: Props) {
 		<Modal onclose={onclose} class="w-full max-w-2xl mx-4 flex flex-col max-h-[85vh]">
 			<form onSubmit={submit} className="flex flex-col min-h-0">
 				<div className="flex items-center gap-2 px-4 pt-4 pb-3 shrink-0">
-					<h2 className="text-sm font-medium text-gray-900 dark:text-white shrink-0">
-						New notebook
-					</h2>
+					<h2 className="text-sm text-gray-900 dark:text-white shrink-0">New notebook</h2>
 					<input
 						autoFocus
 						value={name}
 						placeholder="Notebook name"
-						className="app-input flex-1 min-w-0 h-8 px-2.5 rounded-lg text-xs"
+						className="app-input flex-1 min-w-0 h-8 px-3 rounded-full text-xs"
 						onFocus={(event) => event.currentTarget.select()}
 						onChange={(event) => setName(event.currentTarget.value)}
 					/>
@@ -92,7 +90,7 @@ export default function NewNotebookDialog({ onsubmit, onclose }: Props) {
 							<button
 								key={String(value)}
 								type="button"
-								className={`h-7 px-2 rounded-lg text-xs transition-colors ${
+								className={`h-7 px-2 rounded-full text-xs transition-colors ${
 									landscape === value
 										? 'bg-gray-200/50 dark:bg-white/8 text-gray-900 dark:text-white font-medium'
 										: 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -109,7 +107,7 @@ export default function NewNotebookDialog({ onsubmit, onclose }: Props) {
 						<button
 							key={entry}
 							type="button"
-							className={`h-6 px-2 rounded-lg text-[0.6875rem] shrink-0 transition-colors ${
+							className={`h-6 px-2 rounded-full text-[0.6875rem] shrink-0 transition-colors ${
 								category === entry
 									? 'bg-gray-100 dark:bg-white/6 text-gray-900 dark:text-white font-medium'
 									: 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -133,7 +131,7 @@ export default function NewNotebookDialog({ onsubmit, onclose }: Props) {
 									<button
 										key={`${template.filename}-${template.landscape}`}
 										type="button"
-										className={`flex flex-col gap-1.5 p-2 rounded-xl text-left transition-colors ${
+										className={`flex flex-col gap-1.5 p-2 rounded-xl border text-left transition-colors ${
 											active
 												? 'bg-gray-200/60 dark:bg-white/10 ring-1 ring-gray-300 dark:ring-white/15'
 												: 'hover:bg-gray-100 dark:hover:bg-white/5'
@@ -166,14 +164,14 @@ export default function NewNotebookDialog({ onsubmit, onclose }: Props) {
 					<span className="text-xs app-muted truncate flex-1">Template: {selected.name}</span>
 					<button
 						type="button"
-						className="app-button-ghost h-7 px-3 rounded-lg text-xs"
+						className="app-button-ghost h-7 px-3 rounded-full text-xs"
 						onClick={onclose}
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						className="app-button h-7 px-3 rounded-lg text-xs font-medium"
+						className="app-button h-7 px-3 rounded-full text-xs font-extrabold"
 						disabled={busy || !name.trim()}
 					>
 						Create

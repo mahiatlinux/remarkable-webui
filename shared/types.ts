@@ -123,6 +123,14 @@ export interface TemplateInfo {
 	categories: string[];
 	landscape: boolean;
 	file: TemplateFile | null;
+	id?: string;
+}
+
+export interface TemplateInput {
+	name: string;
+	categories: string[];
+	landscape: boolean;
+	source: string;
 }
 
 export interface ScreenMeta {

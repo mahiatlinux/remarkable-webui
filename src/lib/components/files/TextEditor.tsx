@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { readText, writeText } from '$lib/apis/fs';
 import Icon from '../Icon';
 import Spinner from '../common/Spinner';
 
 interface Props {
-	path: string;
+	title: string;
+	read: () => Promise<string>;
+	write: (text: string) => Promise<void>;
 	onclose: () => void;
 }
 
-export default function TextEditor({ path, onclose }: Props) {
+export default function TextEditor({ title, read, write, onclose }: Props) {
 	const [text, setText] = useState<string | null>(null);
 	const [original, setOriginal] = useState('');
 	const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export default function TextEditor({ path, onclose }: Props) {
 
 	useEffect(() => {
 		let cancelled = false;
-		readText(path)
+		read()
 			.then((content) => {
 				if (cancelled) return;
 				setText(content);
@@ -28,13 +29,13 @@ export default function TextEditor({ path, onclose }: Props) {
 		return () => {
 			cancelled = true;
 		};
-	}, [path]);
+	}, [title]);
 
 	async function save() {
 		if (text === null) return;
 		setSaving(true);
 		try {
-			await writeText(path, text);
+			await write(text);
 			setOriginal(text);
 			toast.success('Saved');
 		} catch (err) {
@@ -60,18 +61,18 @@ export default function TextEditor({ path, onclose }: Props) {
 			<div className="flex items-center gap-2 h-9 px-3 border-b border-gray-200 dark:border-white/6 shrink-0">
 				<Icon name="page-text" size={14} class="app-icon-muted" />
 				<span className="text-xs font-mono truncate min-w-0 text-gray-900 dark:text-white">
-					{path}
+					{title}
 				</span>
 				{dirty && <span className="text-[0.625rem] app-muted">modified</span>}
 				<div className="ml-auto flex items-center gap-1">
 					<button
-						className="app-button h-7 px-3 rounded-lg text-xs font-medium"
+						className="app-button h-7 px-3 rounded-full text-xs font-extrabold"
 						disabled={!dirty || saving}
 						onClick={save}
 					>
 						{saving ? 'Saving…' : 'Save'}
 					</button>
-					<button className="app-button-ghost h-7 px-3 rounded-lg text-xs" onClick={onclose}>
+					<button className="app-button-ghost h-7 px-3 rounded-full text-xs" onClick={onclose}>
 						Close
 					</button>
 				</div>

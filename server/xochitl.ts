@@ -12,7 +12,7 @@ const US = '\x1f';
 
 interface Metadata {
 	visibleName: string;
-	type: 'DocumentType' | 'CollectionType';
+	type: 'DocumentType' | 'CollectionType' | 'TemplateType';
 	parent: string;
 	pinned: boolean;
 	deleted: boolean;
@@ -128,7 +128,7 @@ export async function listLibrary(session: Session): Promise<LibraryItem[]> {
 	}
 	const items: LibraryItem[] = [];
 	for (const [id, meta] of metadata) {
-		if (meta.deleted || !UUID.test(id)) continue;
+		if (meta.deleted || meta.type === 'TemplateType' || !UUID.test(id)) continue;
 		items.push(toItem(id, meta, contents.get(id), sizes.get(id) ?? 0));
 	}
 	return items;

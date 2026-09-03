@@ -14,8 +14,10 @@ import {
 	downloadPathUrl,
 	listDir,
 	makeDir,
+	readText,
 	renamePath,
-	uploadToDir
+	uploadToDir,
+	writeText
 } from '$lib/apis/fs';
 import { downloadUrl } from '$lib/apis/client';
 import { formatBytes, formatDate, formatMode } from '$lib/utils/format';
@@ -260,7 +262,7 @@ export default function FilesView() {
 					<form onSubmit={submitPath} className="flex-1 min-w-0">
 						<input
 							autoFocus
-							className="app-input w-full h-7 px-2 rounded-lg text-xs font-mono"
+							className="app-input w-full h-7 px-3 rounded-full text-xs font-mono"
 							value={pathDraft}
 							onChange={(event) => setPathDraft(event.currentTarget.value)}
 							onBlur={() => setPathDraft(null)}
@@ -270,7 +272,7 @@ export default function FilesView() {
 				) : (
 					<nav className="flex items-center gap-0.5 min-w-0 text-xs overflow-x-auto scrollbar-none">
 						<button
-							className={`h-7 px-1.5 rounded-lg app-button-ghost ${path === '/' ? 'text-gray-900 dark:text-white' : ''}`}
+							className={`h-7 px-1.5 rounded-full app-button-ghost ${path === '/' ? 'text-gray-900 dark:text-white' : ''}`}
 							onClick={() => go('/')}
 						>
 							/
@@ -282,7 +284,7 @@ export default function FilesView() {
 								<span key={target} className="flex items-center gap-0.5">
 									<Icon name="chevron-right" size={12} class="app-icon-muted" />
 									<button
-										className={`h-7 px-1.5 rounded-lg font-mono ${
+										className={`h-7 px-1.5 rounded-full font-mono ${
 											last ? 'text-gray-900 dark:text-white font-medium' : 'app-button-ghost'
 										}`}
 										onClick={() => (last ? setPathDraft(path) : go(target))}
@@ -293,7 +295,7 @@ export default function FilesView() {
 							);
 						})}
 						<button
-							className="app-button-ghost flex items-center justify-center w-6 h-6 rounded-lg ml-1"
+							className="app-button-ghost flex items-center justify-center w-6 h-6 rounded-full ml-1"
 							onClick={() => setPathDraft(path)}
 							aria-label="Edit path"
 						>
@@ -323,7 +325,7 @@ export default function FilesView() {
 						onclick={() => setDialog({ kind: 'mkdir' })}
 					/>
 					<button
-						className="app-button flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium ml-1"
+						className="app-button flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-extrabold ml-1"
 						onClick={() => fileInput.current?.click()}
 					>
 						<Icon name="upload" size={13} />
@@ -356,7 +358,7 @@ export default function FilesView() {
 						{entries.map((entry) => (
 							<div
 								key={entry.name}
-								className={`grid grid-cols-[minmax(0,1fr)_5rem_9rem_6rem] items-center gap-3 h-8 px-2 rounded-lg text-xs cursor-default select-none ${
+								className={`grid grid-cols-[minmax(0,1fr)_5rem_9rem_6rem] items-center gap-3 h-8 px-2 rounded-xl text-xs cursor-default select-none ${
 									selected.has(entry.name)
 										? 'bg-gray-200/60 dark:bg-white/10'
 										: 'hover:bg-gray-100 dark:hover:bg-white/5'
@@ -409,7 +411,14 @@ export default function FilesView() {
 				}}
 			/>
 
-			{editing && <TextEditor path={editing} onclose={() => setEditing(null)} />}
+			{editing && (
+				<TextEditor
+					title={editing}
+					read={() => readText(editing)}
+					write={(text) => writeText(editing, text)}
+					onclose={() => setEditing(null)}
+				/>
+			)}
 
 			{menu && <DropdownMenu anchor={menu} items={menuItems()} onclose={() => setMenu(null)} />}
 

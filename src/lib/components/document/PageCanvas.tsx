@@ -45,7 +45,7 @@ async function backdrop(
 	}
 	if (detail.item.type === 'notebook' && page.template && page.template !== 'Blank') {
 		try {
-			const template = await getTemplateDocument(page.template);
+			const template = await getTemplateDocument(templateFileUrl(page.template, 'template'));
 			return { background: null, backgroundMarkup: renderTemplate(template, paper[0], paper[1]) };
 		} catch {
 			return {
