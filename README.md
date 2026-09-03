@@ -2,6 +2,20 @@
 
 Local web interface for reMarkable paper tablets. Talks to the tablet over SSH, so it works over the USB cable with no wifi at all, and over wifi when SSH is enabled there.
 
+## Screenshots
+
+![Library](docs/screenshots/library.png)
+
+![Document viewer](docs/screenshots/document.png)
+
+![Device panel](docs/screenshots/device.png)
+
+![Templates](docs/screenshots/templates.png)
+
+![Screen mirror](docs/screenshots/screen.png)
+
+![Library in the light theme](docs/screenshots/library-light.png)
+
 ## What it does
 
 - Library browser for the tablet's documents: folders, notebooks, PDFs and EPUBs, with thumbnails, search (⌘K), grid and list views, sorting, drag and drop.
