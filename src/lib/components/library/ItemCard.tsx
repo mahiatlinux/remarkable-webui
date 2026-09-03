@@ -79,7 +79,7 @@ export default function ItemCard({
 	if (view === 'list') {
 		return (
 			<div
-				className={`group grid grid-cols-[minmax(0,1fr)_5rem_4rem_6rem_5rem] items-center gap-3 h-8 px-2 rounded-lg text-xs cursor-default select-none ${selectedClass} ${dropClass}`}
+				className={`group grid grid-cols-[minmax(0,1fr)_5rem_4rem_6rem_5rem] items-center gap-3 h-8 px-2 rounded-xl text-xs cursor-default select-none ${selectedClass} ${dropClass}`}
 				draggable
 				onDragStart={ondragstart}
 				onDragOver={allowDrop}
@@ -107,7 +107,7 @@ export default function ItemCard({
 
 	return (
 		<div
-			className={`group flex flex-col gap-1.5 p-2 rounded-xl cursor-default select-none transition-colors duration-75 ${selectedClass} ${dropClass}`}
+			className={`group flex flex-col gap-1.5 p-2 rounded-xl border cursor-default select-none transition-colors duration-75 ${selectedClass} ${dropClass}`}
 			draggable
 			onDragStart={ondragstart}
 			onDragOver={allowDrop}

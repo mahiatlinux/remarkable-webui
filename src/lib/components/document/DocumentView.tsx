@@ -157,10 +157,7 @@ export default function DocumentView() {
 						navigate(`/library/${detail.item.parent === 'trash' ? 'trash' : detail.item.parent}`)
 					}
 				/>
-				<span
-					className="text-xs font-medium text-gray-900 dark:text-white truncate min-w-0"
-					title={name}
-				>
+				<span className="page-title truncate min-w-0" title={name}>
 					{name}
 				</span>
 				<div className="ml-auto flex items-center gap-0.5">
@@ -187,7 +184,7 @@ export default function DocumentView() {
 						onclick={() => zoomBy(-1)}
 					/>
 					<button
-						className="app-button-ghost h-7 px-1.5 rounded-lg text-[0.6875rem] tabular-nums min-w-[3rem]"
+						className="app-button-ghost h-7 px-1.5 rounded-full text-[0.6875rem] tabular-nums min-w-[3rem]"
 						onClick={() => setZoom('fit')}
 						title="Fit width"
 					>
@@ -231,7 +228,7 @@ export default function DocumentView() {
 						<button
 							key={entry.id}
 							data-page-index={i}
-							className={`flex flex-col items-center gap-1 p-1 rounded-lg transition-colors ${
+							className={`flex flex-col items-center gap-1 p-1 rounded-xl transition-colors ${
 								i === index
 									? 'bg-gray-200/60 dark:bg-white/10'
 									: 'hover:bg-gray-100 dark:hover:bg-white/5'
@@ -256,10 +253,7 @@ export default function DocumentView() {
 					))}
 				</div>
 
-				<div
-					ref={scroller}
-					className="flex-1 min-w-0 overflow-auto scrollbar-hover bg-gray-100 dark:bg-black/30"
-				>
+				<div ref={scroller} className="app-page flex-1 min-w-0 overflow-auto scrollbar-hover">
 					{page ? (
 						<div className="min-h-full flex items-start justify-center p-4">
 							<PageCanvas

@@ -75,14 +75,14 @@ export default function SidebarHeader() {
 			<div className="flex items-center justify-between h-9 pl-3.5 pr-1.5 shrink-0">
 				<a
 					href="/"
-					className="flex items-center gap-1.5 text-xs font-semibold tracking-tight text-gray-900 dark:text-white"
+					className="flex items-center gap-1.5 text-sm font-extrabold tracking-tight text-gray-900 dark:text-white"
 					onClick={goHome}
 				>
 					<Icon name="tablet" size={14} />
 					reMarkable
 				</a>
 				<button
-					className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 transition-colors duration-100"
+					className="flex items-center justify-center w-7 h-7 rounded-full text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 transition-colors duration-100"
 					onClick={() => sidebarOpen.set(false)}
 					aria-label="Collapse sidebar"
 					ref={tooltip('Collapse sidebar')}
@@ -93,7 +93,7 @@ export default function SidebarHeader() {
 			<div className="px-1.5 mb-1 shrink-0">
 				<button
 					ref={buttonEl}
-					className="flex items-center gap-2 w-full h-7 px-2 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 transition-colors duration-100"
+					className="app-surface flex items-center gap-2 w-full h-8 px-3 rounded-full border text-xs transition-colors duration-100"
 					onClick={() => setShowMenu((value) => !value)}
 				>
 					<span className={`status-dot ${current?.status ?? ''}`}></span>

@@ -106,13 +106,13 @@ export default function DevicesView() {
 		});
 	}
 
-	const field = 'app-input w-full h-8 px-2.5 rounded-lg text-xs';
+	const field = 'app-input w-full h-8 px-3 rounded-full text-xs';
 	const labelClass = 'block text-[0.6875rem] text-gray-400 dark:text-gray-600 mb-1';
 
 	return (
 		<div className="h-full flex flex-col">
 			<PageHeader>
-				<span className="text-xs font-medium text-gray-900 dark:text-white">Devices</span>
+				<span className="page-title">Devices</span>
 				<span className="ml-auto flex items-center gap-1.5 text-[0.6875rem] text-gray-400 dark:text-gray-600">
 					<Icon name="usb" size={12} />
 					{usb === null
@@ -132,7 +132,7 @@ export default function DevicesView() {
 								{list.map((device) => (
 									<div
 										key={device.id}
-										className={`flex items-center gap-3 px-3 py-2 rounded-xl border ${
+										className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border ${
 											device.id === active
 												? 'border-gray-300 dark:border-white/15 bg-gray-50 dark:bg-white/3'
 												: 'border-gray-200 dark:border-white/6'
@@ -157,27 +157,27 @@ export default function DevicesView() {
 										</div>
 										{device.status === 'connecting' && <Spinner size={12} />}
 										<button
-											className="app-button-ghost h-7 px-2 rounded-lg text-xs"
+											className="app-button-ghost h-7 px-2 rounded-full text-xs"
 											onClick={() => toggleConnection(device)}
 										>
 											{device.status === 'connected' ? 'Disconnect' : 'Connect'}
 										</button>
 										<button
-											className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-lg"
+											className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-full"
 											onClick={() => edit(device)}
 											aria-label="Edit"
 										>
 											<Icon name="pencil" size={13} />
 										</button>
 										<button
-											className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-lg"
+											className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-full"
 											onClick={() => setRemoving(device)}
 											aria-label="Remove"
 										>
 											<Icon name="trash" size={13} />
 										</button>
 										<button
-											className="app-button h-7 px-3 rounded-lg text-xs font-medium"
+											className="app-button h-7 px-3 rounded-full text-xs font-extrabold"
 											onClick={() => use(device)}
 										>
 											Open
@@ -273,7 +273,7 @@ export default function DevicesView() {
 								{list.length > 0 && (
 									<button
 										type="button"
-										className="app-button-ghost h-8 px-3 rounded-lg text-xs"
+										className="app-button-ghost h-8 px-3 rounded-full text-xs"
 										onClick={() => setDraft(null)}
 									>
 										Cancel
@@ -281,7 +281,7 @@ export default function DevicesView() {
 								)}
 								<button
 									type="submit"
-									className="app-button h-8 px-4 rounded-lg text-xs font-medium"
+									className="app-button h-8 px-4 rounded-full text-xs font-extrabold"
 									disabled={saving || !draft.host.trim()}
 								>
 									{saving ? 'Connecting…' : draft.id ? 'Save and connect' : 'Add and connect'}
@@ -290,7 +290,7 @@ export default function DevicesView() {
 						</form>
 					) : (
 						<button
-							className="flex items-center gap-2 h-9 px-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/3 transition-colors"
+							className="flex items-center gap-2 h-10 px-4 rounded-2xl border border-dashed border-gray-300 dark:border-white/10 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/3 transition-colors"
 							onClick={() => setDraft(emptyDraft())}
 						>
 							<Icon name="plus" size={14} />

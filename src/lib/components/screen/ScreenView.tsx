@@ -205,7 +205,7 @@ export default function ScreenView() {
 	return (
 		<div className="h-full flex flex-col">
 			<PageHeader>
-				<span className="text-xs font-medium text-gray-900 dark:text-white">Screen</span>
+				<span className="page-title">Screen</span>
 				{meta && (
 					<span className="text-xs app-muted">
 						{meta.model} · {meta.width}×{meta.height} · {fps} updates/s

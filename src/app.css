@@ -4,16 +4,21 @@
 @custom-variant hover (&:hover);
 
 @theme {
-	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
+	--font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif;
 	--font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 
-	--radius-sm: 0.1875rem;
-	--radius-md: 0.25rem;
-	--radius-lg: 0.375rem;
-	--radius-xl: 0.5rem;
-	--radius-2xl: 0.75rem;
-	--radius-3xl: 1rem;
-	--radius-4xl: 1.5rem;
+	--radius-sm: 0.25rem;
+	--radius-md: 0.375rem;
+	--radius-lg: 0.625rem;
+	--radius-xl: 0.875rem;
+	--radius-2xl: 1.25rem;
+	--radius-3xl: 1.5rem;
+	--radius-4xl: 1.75rem;
+
+	--font-weight-normal: 600;
+	--font-weight-medium: 700;
+	--font-weight-semibold: 800;
+	--font-weight-bold: 800;
 
 	--color-gray-50: color-mix(in oklab, var(--app-bg) 96%, var(--app-fg));
 	--color-gray-100: color-mix(in oklab, var(--app-bg) 92%, var(--app-fg));
@@ -36,26 +41,25 @@
 	--app-fg-muted: color-mix(in oklab, var(--app-fg) 62%, var(--app-bg));
 	--app-fg-subtle: color-mix(in oklab, var(--app-fg) 48%, var(--app-bg));
 	--app-fg-faint: color-mix(in oklab, var(--app-fg) 38%, var(--app-bg));
+	--app-page: color-mix(in oklab, var(--app-bg) 93%, var(--app-fg));
 	--app-surface: var(--app-bg);
-	--app-subtle-surface: var(--app-bg);
-	--app-sidebar: var(--app-bg);
 	--app-border: color-mix(in oklab, var(--app-fg) 12%, transparent);
 	--app-divider: color-mix(in oklab, var(--app-fg) 8%, transparent);
 	--app-hover: color-mix(in oklab, var(--app-fg) 6%, transparent);
 	--app-active: color-mix(in oklab, var(--app-fg) 7%, transparent);
 	--app-ui-font: var(--font-sans);
-	--app-shell-radius: 0.875rem;
-	--app-popover-radius: 0.625rem;
-	--app-menu-item-radius: 0.4375rem;
+	--app-gutter: clamp(0.5rem, 1.2vw, 1rem);
+	--app-shell-radius: 1.5rem;
+	--app-popover-radius: 0.875rem;
+	--app-menu-item-radius: calc(var(--app-popover-radius) - 0.125rem);
 }
 
 :root.dark {
 	--app-fg-muted: color-mix(in oklab, var(--app-fg) 68%, var(--app-bg));
 	--app-fg-subtle: color-mix(in oklab, var(--app-fg) 50%, var(--app-bg));
 	--app-fg-faint: color-mix(in oklab, var(--app-fg) 34%, var(--app-bg));
+	--app-page: var(--app-bg);
 	--app-surface: color-mix(in oklab, var(--app-bg) 96.5%, var(--app-fg));
-	--app-subtle-surface: color-mix(in oklab, var(--app-bg) 98%, var(--app-fg));
-	--app-sidebar: color-mix(in oklab, var(--app-bg) 99%, var(--app-fg));
 	--app-hover: color-mix(in oklab, var(--app-fg) 8%, transparent);
 	--app-active: color-mix(in oklab, var(--app-fg) 11%, transparent);
 }
@@ -77,9 +81,23 @@
 		overscroll-behavior: none;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
-		background: var(--app-bg);
+		background: var(--app-page);
 		color: var(--app-fg);
 		font-family: var(--app-ui-font);
+		font-weight: 700;
+		letter-spacing: -0.01em;
+	}
+
+	h1,
+	h2,
+	h3 {
+		font-weight: 800;
+		letter-spacing: -0.015em;
+	}
+
+	:focus-visible {
+		outline: 2px solid color-mix(in oklab, var(--app-fg) 45%, transparent);
+		outline-offset: 2px;
 	}
 
 	html::-webkit-scrollbar,
@@ -100,7 +118,7 @@
 
 ::-webkit-scrollbar-thumb {
 	background-color: color-mix(in oklab, var(--app-fg) 32%, transparent);
-	border-color: var(--app-bg);
+	border-color: var(--app-page);
 	border-radius: 624.9375rem;
 	border-width: 1px;
 }
@@ -133,7 +151,28 @@
 }
 
 .app-theme {
-	background: var(--app-bg);
+	background: var(--app-surface);
+	color: var(--app-fg);
+}
+
+.app-page {
+	background: var(--app-page);
+}
+
+.app-gutter {
+	padding: var(--app-gutter);
+}
+
+.app-board {
+	background: var(--app-surface);
+	border: 1px solid var(--app-border);
+	border-radius: var(--app-shell-radius);
+}
+
+.page-title {
+	font-size: 0.9375rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
 	color: var(--app-fg);
 }
 
@@ -153,12 +192,6 @@
 
 .app-popover-radius .rounded-xl {
 	border-radius: var(--app-menu-item-radius);
-}
-
-.app-subtle-surface {
-	background: var(--app-subtle-surface);
-	color: var(--app-fg);
-	border-color: var(--app-border);
 }
 
 .app-divider {
@@ -370,6 +403,7 @@
 .app-button {
 	background: var(--app-fg);
 	color: var(--app-bg);
+	font-weight: 800;
 }
 
 .app-button:hover {

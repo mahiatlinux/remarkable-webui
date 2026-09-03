@@ -44,7 +44,7 @@ export default function SidebarFooter({ onsettings }: Props) {
 	return (
 		<>
 			{current?.pendingRestart && (
-				<div className="mx-1.5 mb-1 px-2 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 text-[0.6875rem] text-gray-600 dark:text-gray-400">
+				<div className="mx-1.5 mb-1 px-2 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 text-[0.6875rem] text-gray-600 dark:text-gray-400">
 					<div className="flex items-center gap-1.5">
 						<Icon name="warning" size={12} />
 						<span className="flex-1">Changes not yet visible on the tablet</span>
@@ -57,7 +57,7 @@ export default function SidebarFooter({ onsettings }: Props) {
 			<div className="relative mt-auto px-1 pb-0.5 shrink-0">
 				<button
 					ref={menuButtonEl}
-					className="flex items-center gap-2 w-full h-8 px-2 pr-10 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-100"
+					className="flex items-center gap-2 w-full h-8 px-2 pr-10 rounded-full text-xs font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-100"
 					onClick={() => setShowMenu((value) => !value)}
 				>
 					<span className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-white/10 shrink-0">

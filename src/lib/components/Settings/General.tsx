@@ -29,7 +29,7 @@ export default function General() {
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1.5 -mr-1.5">
-				<h2 className="text-sm font-medium text-gray-900 dark:text-white mb-4">General</h2>
+				<h2 className="text-sm text-gray-900 dark:text-white mb-4">General</h2>
 
 				<div className="mb-5">
 					<div className="flex items-baseline gap-2">
@@ -51,7 +51,7 @@ export default function General() {
 					].map((opt) => (
 						<button
 							key={opt.value}
-							className={`flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs transition-colors duration-100
+							className={`flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs transition-colors duration-100
 							${
 								view === opt.value
 									? 'bg-gray-200/50 dark:bg-white/8 text-gray-900 dark:text-white font-medium'

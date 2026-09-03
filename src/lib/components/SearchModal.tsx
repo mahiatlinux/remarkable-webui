@@ -236,7 +236,7 @@ export default function SearchModal({ open, onclose }: Props) {
 									<button
 										key={result.item.id}
 										data-search-index={index}
-										className={`search-modal-result flex h-[30px] w-full items-center gap-[6px] rounded-[7px] px-[8px] text-left transition-colors duration-75 ${
+										className={`search-modal-result flex h-[30px] w-full items-center gap-[6px] rounded-lg px-[8px] text-left transition-colors duration-75 ${
 											index === selected ? 'search-modal-result-selected' : ''
 										}`}
 										onMouseEnter={() => setSelected(index)}

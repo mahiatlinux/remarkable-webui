@@ -29,7 +29,6 @@ export default function Modal({
 		>
 			<div
 				className={`app-theme app-surface app-shell-radius border overflow-visible shadow-2xl ${className}`}
-				style={{ background: 'var(--app-bg)', color: 'var(--app-fg)' }}
 				onMouseDown={(e) => e.stopPropagation()}
 				onKeyDown={() => {}}
 			>

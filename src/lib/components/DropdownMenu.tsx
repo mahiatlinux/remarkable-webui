@@ -411,7 +411,7 @@ export default function DropdownMenu({
 											</button>
 											{item.actionIcon && item.actionOnclick && (
 												<button
-													className="app-icon-muted app-interactive flex items-center justify-center w-5 h-5 mr-0.5 rounded-lg shrink-0 transition-all duration-75"
+													className="app-icon-muted app-interactive flex items-center justify-center w-5 h-5 mr-0.5 rounded-full shrink-0 transition-all duration-75"
 													aria-label={item.actionLabel}
 													onClick={(e) => {
 														e.stopPropagation();

@@ -344,8 +344,8 @@ export default function LibraryView() {
 			<PageHeader>
 				<nav className="flex items-center gap-0.5 min-w-0 text-xs">
 					<button
-						className={`flex items-center gap-1 h-7 px-1.5 rounded-lg transition-colors ${
-							!folderId ? 'text-gray-900 dark:text-white font-medium' : 'app-button-ghost'
+						className={`flex items-center gap-1 h-7 px-1.5 rounded-full transition-colors ${
+							!folderId ? 'page-title' : 'app-button-ghost'
 						}`}
 						onClick={() => navigate('/library')}
 						onDragOver={(event) =>
@@ -362,17 +362,15 @@ export default function LibraryView() {
 					{inTrash && (
 						<>
 							<Icon name="chevron-right" size={12} class="app-icon-muted" />
-							<span className="px-1.5 text-gray-900 dark:text-white font-medium">Trash</span>
+							<span className="px-1.5 page-title">Trash</span>
 						</>
 					)}
 					{crumbs.map((crumb, index) => (
 						<span key={crumb.id} className="flex items-center gap-0.5 min-w-0">
 							<Icon name="chevron-right" size={12} class="app-icon-muted" />
 							<button
-								className={`h-7 px-1.5 rounded-lg truncate max-w-[12rem] transition-colors ${
-									index === crumbs.length - 1
-										? 'text-gray-900 dark:text-white font-medium'
-										: 'app-button-ghost'
+								className={`h-7 px-1.5 rounded-full truncate max-w-[12rem] transition-colors ${
+									index === crumbs.length - 1 ? 'page-title' : 'app-button-ghost'
 								}`}
 								onClick={() => navigate(`/library/${crumb.id}`)}
 								onDragOver={(event) =>
@@ -415,7 +413,7 @@ export default function LibraryView() {
 					/>
 					{inTrash ? (
 						<button
-							className="app-button-ghost flex items-center gap-1.5 h-7 px-2 rounded-lg text-xs"
+							className="app-button-ghost flex items-center gap-1.5 h-7 px-2 rounded-full text-xs"
 							disabled={children.length === 0}
 							onClick={() => setDialog({ kind: 'purge', ids: children.map((item) => item.id) })}
 						>
@@ -425,7 +423,7 @@ export default function LibraryView() {
 					) : (
 						<button
 							ref={newButton}
-							className="app-button flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium ml-1"
+							className="app-button flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-extrabold ml-1"
 							onClick={() => setShowNew(true)}
 						>
 							<Icon name="plus" size={13} />
@@ -470,7 +468,7 @@ export default function LibraryView() {
 						hint={inTrash ? undefined : 'Drop PDF, EPUB or rmdoc files anywhere to upload them.'}
 					/>
 				) : view === 'grid' ? (
-					<div className="grid gap-1 p-3 grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]">
+					<div className="grid gap-2 p-3 grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]">
 						{children.map((item) => (
 							<ItemCard
 								key={item.id}

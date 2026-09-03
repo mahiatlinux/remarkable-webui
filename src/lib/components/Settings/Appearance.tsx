@@ -166,14 +166,14 @@ export default function Appearance() {
 	}
 
 	const stepButton =
-		'flex items-center justify-center w-6 h-6 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/6 transition-colors';
+		'flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/6 transition-colors';
 
 	return (
 		<>
 			<div className="flex flex-col h-full">
 				<div className="flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1.5 -mr-1.5">
 					<div className="flex items-center justify-between mb-4">
-						<h2 className="text-sm font-medium text-gray-900 dark:text-white">Appearance</h2>
+						<h2 className="text-sm text-gray-900 dark:text-white">Appearance</h2>
 						<button
 							type="button"
 							className="text-[0.625rem] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-100 disabled:opacity-30 disabled:pointer-events-none"
@@ -193,7 +193,7 @@ export default function Appearance() {
 						].map((opt) => (
 							<button
 								key={opt.value}
-								className={`flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs transition-colors duration-100
+								className={`flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs transition-colors duration-100
 								${
 									themeValue === opt.value
 										? 'bg-gray-200/50 dark:bg-white/8 text-gray-900 dark:text-white font-medium'
@@ -225,7 +225,7 @@ export default function Appearance() {
 									/>
 									<button
 										type="button"
-										className="inline-flex h-6 items-center gap-1 rounded-lg px-1.5 text-[0.625rem] text-gray-400 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-700 disabled:pointer-events-none disabled:opacity-35 dark:hover:bg-white/6 dark:hover:text-gray-300"
+										className="inline-flex h-6 items-center gap-1 rounded-full px-1.5 text-[0.625rem] text-gray-400 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-700 disabled:pointer-events-none disabled:opacity-35 dark:hover:bg-white/6 dark:hover:text-gray-300"
 										disabled={resolvedConfig[opt.key] === defaultColors[opt.key]}
 										onClick={() => resetThemeColor(opt.key)}
 									>
@@ -264,7 +264,7 @@ export default function Appearance() {
 							<span className="text-xs text-gray-600 dark:text-gray-400">Border contrast</span>
 							<button
 								type="button"
-								className="ml-auto h-6 px-2 rounded-lg text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/6 transition-colors"
+								className="ml-auto h-6 px-2 rounded-full text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/6 transition-colors"
 								onClick={toggleBorderContrast}
 							>
 								{borderContrastEnabled ? borderContrastLabel(borderContrastDraft) : 'Default'}
@@ -311,7 +311,7 @@ export default function Appearance() {
 							<span className="text-xs text-gray-600 dark:text-gray-400">UI scale</span>
 							<button
 								type="button"
-								className="ml-auto h-6 px-2 rounded-lg text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/6 transition-colors"
+								className="ml-auto h-6 px-2 rounded-full text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/6 transition-colors"
 								onClick={toggleTextScale}
 							>
 								{scaleEnabled ? scaleLabel(scaleDraft) : 'Default'}

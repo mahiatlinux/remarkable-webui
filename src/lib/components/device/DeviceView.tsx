@@ -10,7 +10,7 @@ import { ConfirmDialog } from '../common/Dialog';
 
 function Card({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
 	return (
-		<section className="rounded-xl border border-gray-200 dark:border-white/6 p-3 flex flex-col gap-2">
+		<section className="rounded-2xl border p-3.5 flex flex-col gap-2">
 			<h2 className="flex items-center gap-1.5 text-[0.6875rem] text-gray-400 dark:text-gray-600">
 				<Icon name={icon} size={12} />
 				{title}
@@ -92,7 +92,7 @@ export default function DeviceView() {
 	return (
 		<div className="h-full flex flex-col">
 			<PageHeader>
-				<span className="text-xs font-medium text-gray-900 dark:text-white">Device</span>
+				<span className="page-title">Device</span>
 				{info && <span className="text-xs app-muted truncate">{info.model}</span>}
 				<div className="ml-auto flex items-center gap-0.5">
 					{loading && <Spinner size={12} class="mr-1" />}
@@ -191,7 +191,7 @@ export default function DeviceView() {
 							<div className="flex items-center justify-between gap-3 text-xs">
 								<span className="app-muted">Reachable through SSH</span>
 								<button
-									className="app-button-ghost h-6 px-2 rounded-lg text-xs font-mono"
+									className="app-button-ghost h-6 px-2 rounded-full text-xs font-mono"
 									onClick={checkWebui}
 									disabled={webui === 'checking'}
 								>
@@ -208,21 +208,21 @@ export default function DeviceView() {
 							</p>
 							<div className="flex flex-wrap gap-1.5 mt-1">
 								<button
-									className="app-button-ghost flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs border border-gray-200 dark:border-white/10"
+									className="app-button-ghost flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs border border-gray-200 dark:border-white/10"
 									onClick={() => act('restart-xochitl')}
 								>
 									<Icon name="refresh" size={13} />
 									Restart xochitl
 								</button>
 								<button
-									className="app-button-ghost flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs border border-gray-200 dark:border-white/10"
+									className="app-button-ghost flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs border border-gray-200 dark:border-white/10"
 									onClick={() => setConfirm('reboot')}
 								>
 									<Icon name="rotate" size={13} />
 									Reboot
 								</button>
 								<button
-									className="app-button-ghost flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs border border-gray-200 dark:border-white/10"
+									className="app-button-ghost flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs border border-gray-200 dark:border-white/10"
 									onClick={() => setConfirm('poweroff')}
 								>
 									<Icon name="power" size={13} />

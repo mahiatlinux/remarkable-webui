@@ -24,8 +24,8 @@ kbd.sidebar-nav-kbd {
 
 .sidebar-nav-link.active {
 	color: var(--app-fg);
-	background: var(--app-hover);
-	font-weight: 500;
+	background: var(--app-surface);
+	box-shadow: inset 0 0 0 1px var(--app-border);
 }
 `;
 
@@ -66,7 +66,7 @@ export default function SidebarNav({ onopensearch }: Props) {
 	}
 
 	const linkClass =
-		'sidebar-nav-link flex items-center gap-1.5 w-full h-7 px-2 rounded-lg text-xs transition-colors duration-100 no-underline';
+		'sidebar-nav-link flex items-center gap-1.5 w-full h-7 px-2 rounded-full text-xs transition-colors duration-100 no-underline';
 
 	return (
 		<>
@@ -75,7 +75,7 @@ export default function SidebarNav({ onopensearch }: Props) {
 			</style>
 			<div className="px-1.5 mt-1 shrink-0">
 				<button
-					className="group flex items-center gap-1.5 w-full h-7 px-2 rounded-lg text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-100"
+					className="group flex items-center gap-1.5 w-full h-7 px-2 rounded-full text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-100"
 					onClick={onopensearch}
 					disabled={!active}
 				>
@@ -107,7 +107,7 @@ export default function SidebarNav({ onopensearch }: Props) {
 			</div>
 			<div className="px-1.5 mt-2 shrink-0">
 				<button
-					className={`sidebar-nav-link flex items-center gap-1 w-full h-6 px-2 rounded-lg text-[0.625rem] transition-colors duration-100 ${
+					className={`sidebar-nav-link flex items-center gap-1 w-full h-6 px-2 rounded-full text-[0.625rem] transition-colors duration-100 ${
 						active ? '' : 'opacity-40 pointer-events-none'
 					}`}
 					onClick={() => developerNavOpen.set(!showDeveloper)}

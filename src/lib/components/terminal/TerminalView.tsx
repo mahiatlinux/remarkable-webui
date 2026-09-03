@@ -12,10 +12,6 @@ function wsUrl(path: string): string {
 	return `${protocol}://${location.host}${path}`;
 }
 
-function cssColor(name: string): string {
-	return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-
 export default function TerminalView() {
 	const deviceId = useStore(activeDeviceId);
 	const list = useStore(devices);
@@ -30,15 +26,12 @@ export default function TerminalView() {
 		if (!element || !deviceId) return;
 		setStatus('connecting');
 		setMessage(null);
+		const { backgroundColor, color } = getComputedStyle(element);
 		const terminal = new Terminal({
 			cursorBlink: true,
 			fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, monospace",
 			fontSize: 12,
-			theme: {
-				background: cssColor('--app-bg') || '#0b0d10',
-				foreground: cssColor('--app-fg') || '#e7e9ed',
-				cursor: cssColor('--app-fg') || '#e7e9ed'
-			}
+			theme: { background: backgroundColor, foreground: color, cursor: color }
 		});
 		const fit = new FitAddon();
 		terminal.loadAddon(fit);
@@ -89,7 +82,7 @@ export default function TerminalView() {
 	return (
 		<div className="h-full flex flex-col">
 			<PageHeader>
-				<span className="text-xs font-medium text-gray-900 dark:text-white">Terminal</span>
+				<span className="page-title">Terminal</span>
 				<span className="text-xs app-muted font-mono truncate">
 					{device ? `${device.username}@${device.host}` : ''}
 				</span>
@@ -107,8 +100,8 @@ export default function TerminalView() {
 					{message}
 				</div>
 			)}
-			<div className="flex-1 min-h-0 p-2">
-				<div ref={host} className="h-full w-full" />
+			<div className="flex-1 min-h-0 p-3">
+				<div ref={host} className="app-page h-full w-full rounded-xl p-2 overflow-hidden" />
 			</div>
 		</div>
 	);

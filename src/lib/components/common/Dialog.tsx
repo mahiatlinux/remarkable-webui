@@ -32,17 +32,17 @@ export function ConfirmDialog({
 
 	return (
 		<Modal onclose={onclose} class="w-full max-w-sm mx-4 p-4">
-			<h2 className="text-sm font-medium text-gray-900 dark:text-white">{title}</h2>
+			<h2 className="text-sm text-gray-900 dark:text-white">{title}</h2>
 			<div className="text-xs text-gray-500 mt-2 leading-relaxed">{message}</div>
 			<div className="flex justify-end gap-1.5 mt-4">
 				<button
-					className="app-button-ghost h-7 px-3 rounded-lg text-xs transition-colors"
+					className="app-button-ghost h-7 px-3 rounded-full text-xs transition-colors"
 					onClick={onclose}
 				>
 					Cancel
 				</button>
 				<button
-					className={`${danger ? 'app-button-danger' : 'app-button'} h-7 px-3 rounded-lg text-xs font-medium transition-colors`}
+					className={`${danger ? 'app-button-danger' : 'app-button'} h-7 px-3 rounded-full text-xs font-extrabold transition-colors`}
 					onClick={confirm}
 					disabled={busy}
 					autoFocus
@@ -104,26 +104,26 @@ export function PromptDialog({
 	return (
 		<Modal onclose={onclose} class="w-full max-w-sm mx-4 p-4">
 			<form onSubmit={submit}>
-				<h2 className="text-sm font-medium text-gray-900 dark:text-white">{title}</h2>
+				<h2 className="text-sm text-gray-900 dark:text-white">{title}</h2>
 				{label && <label className="block text-xs text-gray-500 mt-2">{label}</label>}
 				<input
 					ref={inputEl}
 					value={value}
 					placeholder={placeholder}
-					className="app-input w-full h-8 px-2.5 mt-2 rounded-lg text-xs"
+					className="app-input w-full h-8 px-3 mt-2 rounded-full text-xs"
 					onChange={(event) => setValue(event.currentTarget.value)}
 				/>
 				<div className="flex justify-end gap-1.5 mt-4">
 					<button
 						type="button"
-						className="app-button-ghost h-7 px-3 rounded-lg text-xs transition-colors"
+						className="app-button-ghost h-7 px-3 rounded-full text-xs transition-colors"
 						onClick={onclose}
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						className="app-button h-7 px-3 rounded-lg text-xs font-medium transition-colors"
+						className="app-button h-7 px-3 rounded-full text-xs font-extrabold transition-colors"
 						disabled={busy || !value.trim()}
 					>
 						{confirmLabel}

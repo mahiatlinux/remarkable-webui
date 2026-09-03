@@ -24,7 +24,7 @@ export type AppearancePreferences = {
 type ResolvedTheme = 'dark' | 'light';
 
 const DEFAULT_UI_FONT =
-	"'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif";
+	"'Manrope', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif";
 export const DEFAULT_BORDER_CONTRAST = 1.5;
 export const DEFAULT_DIVIDER_CONTRAST = 0.875;
 export const MAX_BORDER_CONTRAST = 16;

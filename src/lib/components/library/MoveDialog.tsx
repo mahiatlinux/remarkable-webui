@@ -62,7 +62,7 @@ export default function MoveDialog({ items, moving, current, onmove, onclose }: 
 	return (
 		<Modal onclose={onclose} class="w-full max-w-sm mx-4 flex flex-col max-h-[70vh]">
 			<div className="px-4 pt-4 pb-2">
-				<h2 className="text-sm font-medium text-gray-900 dark:text-white">
+				<h2 className="text-sm text-gray-900 dark:text-white">
 					Move {moving.length === 1 ? 'item' : `${moving.length} items`}
 				</h2>
 			</div>
@@ -72,7 +72,7 @@ export default function MoveDialog({ items, moving, current, onmove, onclose }: 
 					return (
 						<button
 							key={row.id}
-							className={`flex items-center gap-2 w-full h-7 rounded-lg text-xs text-left transition-colors duration-75 disabled:opacity-40 ${
+							className={`flex items-center gap-2 w-full h-7 rounded-full text-xs text-left transition-colors duration-75 disabled:opacity-40 ${
 								target === row.id
 									? 'bg-gray-200/60 dark:bg-white/10 text-gray-900 dark:text-white'
 									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
@@ -90,11 +90,11 @@ export default function MoveDialog({ items, moving, current, onmove, onclose }: 
 				})}
 			</div>
 			<div className="flex justify-end gap-1.5 p-4">
-				<button className="app-button-ghost h-7 px-3 rounded-lg text-xs" onClick={onclose}>
+				<button className="app-button-ghost h-7 px-3 rounded-full text-xs" onClick={onclose}>
 					Cancel
 				</button>
 				<button
-					className="app-button h-7 px-3 rounded-lg text-xs font-medium"
+					className="app-button h-7 px-3 rounded-full text-xs font-extrabold"
 					disabled={target === null || busy}
 					onClick={() => move()}
 				>

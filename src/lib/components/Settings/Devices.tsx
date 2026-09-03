@@ -22,7 +22,7 @@ export default function Devices() {
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-sm font-medium text-gray-900 dark:text-white">Devices</h2>
+				<h2 className="text-sm text-gray-900 dark:text-white">Devices</h2>
 				<button
 					className="text-[0.625rem] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-100"
 					onClick={() => navigate('/devices')}
@@ -37,7 +37,7 @@ export default function Devices() {
 					{list.map((device) => (
 						<div
 							key={device.id}
-							className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+							className="flex items-center gap-2 h-9 px-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5"
 						>
 							<Icon name="tablet" size={14} class="app-icon-muted" />
 							<div className="flex-1 min-w-0">
@@ -52,7 +52,7 @@ export default function Devices() {
 								</div>
 							</div>
 							<button
-								className="app-button-ghost flex items-center justify-center w-6 h-6 rounded-lg"
+								className="app-button-ghost flex items-center justify-center w-6 h-6 rounded-full"
 								onClick={() => activeDeviceId.set(device.id)}
 								aria-label="Use device"
 								disabled={device.id === active}
@@ -60,7 +60,7 @@ export default function Devices() {
 								<Icon name="check" size={12} />
 							</button>
 							<button
-								className="app-button-ghost flex items-center justify-center w-6 h-6 rounded-lg"
+								className="app-button-ghost flex items-center justify-center w-6 h-6 rounded-full"
 								onClick={() => remove(device.id)}
 								aria-label="Remove device"
 							>

@@ -82,18 +82,15 @@ export default function App() {
 
 	return (
 		<>
-			<div
-				className="app-theme h-screen max-h-[100dvh] flex overflow-hidden font-sans antialiased text-gray-900 bg-white dark:text-gray-100 dark:bg-[#0b0d10]"
-				style={{ background: 'var(--app-bg)', color: 'var(--app-fg)' }}
-			>
+			<div className="app-theme app-page h-screen max-h-[100dvh] flex overflow-hidden font-sans antialiased">
 				<Sidebar />
 
 				<div
 					id="main-col"
-					className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden"
-					style={{ paddingTop: 'env(safe-area-inset-top, 0)' }}
+					className="app-gutter flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden"
+					style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + var(--app-gutter))' }}
 				>
-					<main className="relative flex-1 min-h-0 overflow-hidden">
+					<main className="app-board relative flex-1 min-h-0 overflow-hidden">
 						<Routes>
 							<Route
 								path="/"
@@ -171,7 +168,8 @@ export default function App() {
 					style: {
 						fontSize: '0.75rem',
 						fontFamily: 'var(--font-sans)',
-						borderRadius: '0.375rem'
+						fontWeight: 700,
+						borderRadius: '1rem'
 					}
 				}}
 			/>

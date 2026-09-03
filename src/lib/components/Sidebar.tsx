@@ -25,7 +25,7 @@ const css = `
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	background: var(--app-sidebar);
+	background: var(--app-page);
 	color: var(--app-fg);
 	border-right: 1px solid var(--app-border);
 	padding-top: env(safe-area-inset-top, 0);
@@ -40,7 +40,6 @@ const css = `
 .sidebar.closed {
 	transform: translateX(-100%);
 	pointer-events: none;
-	border-right-color: transparent;
 }
 
 .sidebar-content {
@@ -72,8 +71,8 @@ const css = `
 
 .sidebar-reopen {
 	position: fixed;
-	left: max(0.75rem, env(safe-area-inset-left, 0px));
-	top: calc(env(safe-area-inset-top, 0px) + 0.25rem);
+	left: calc(var(--app-gutter) + 0.5rem + env(safe-area-inset-left, 0px));
+	top: calc(var(--app-gutter) + 0.5rem + env(safe-area-inset-top, 0px));
 	z-index: 60;
 	display: flex;
 	align-items: center;
@@ -82,7 +81,7 @@ const css = `
 	height: 1.75rem;
 	padding: 0;
 	border: 0;
-	border-radius: 0.75rem;
+	border-radius: 624.9375rem;
 	background: transparent;
 	color: var(--app-fg-subtle);
 	cursor: pointer;
@@ -138,16 +137,13 @@ const css = `
 	}
 }
 
-.dark .sidebar:not(.closed) {
-	border-right-color: var(--app-border);
-}
-
 @media (min-width: 768px) {
 	.sidebar {
 		position: relative;
 		z-index: auto;
 		width: var(--sw, 220px);
 		flex: 0 0 var(--sw, 220px);
+		border-right: 0;
 		transform: translateX(0);
 		transition:
 			width 180ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -157,7 +153,6 @@ const css = `
 	.sidebar.closed {
 		width: 0;
 		flex-basis: 0;
-		border-right-width: 0;
 		transform: translateX(0);
 	}
 }
