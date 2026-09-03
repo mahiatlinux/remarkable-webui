@@ -28,7 +28,7 @@ function persisted<T>(key: string, initial: T): Writable<T> {
 export const sidebarOpen = writable<boolean>(true);
 export const sidebarWidth = persisted<number>('rm_sidebar_width', 220);
 
-export const appVersion = writable<string>('0.1.0');
+export const appVersion = writable<string>(__APP_VERSION__);
 
 export const devices = writable<DeviceState[]>([]);
 export const devicesLoaded = writable<boolean>(false);

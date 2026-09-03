@@ -4,8 +4,9 @@ import Modal from './Modal';
 import General from './Settings/General';
 import Appearance from './Settings/Appearance';
 import Devices from './Settings/Devices';
+import About from './Settings/About';
 
-export type SettingsTab = 'general' | 'appearance' | 'devices';
+export type SettingsTab = 'general' | 'appearance' | 'devices' | 'about';
 
 interface Props {
 	onclose: () => void;
@@ -15,7 +16,8 @@ interface Props {
 const TABS: { id: SettingsTab; label: string; icon: string }[] = [
 	{ id: 'general', label: 'General', icon: 'settings' },
 	{ id: 'appearance', label: 'Appearance', icon: 'sun-light' },
-	{ id: 'devices', label: 'Devices', icon: 'tablet' }
+	{ id: 'devices', label: 'Devices', icon: 'tablet' },
+	{ id: 'about', label: 'About', icon: 'info' }
 ];
 
 export default function SettingsModal({ onclose, initialTab = 'general' }: Props) {
@@ -57,6 +59,7 @@ export default function SettingsModal({ onclose, initialTab = 'general' }: Props
 				{activeTab === 'general' && <General />}
 				{activeTab === 'appearance' && <Appearance />}
 				{activeTab === 'devices' && <Devices />}
+				{activeTab === 'about' && <About />}
 			</div>
 		</Modal>
 	);

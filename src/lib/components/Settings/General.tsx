@@ -2,7 +2,6 @@ import { toast } from 'sonner';
 import { useStore } from '$lib/store';
 import {
 	activeDeviceId,
-	appVersion,
 	devices,
 	libraryView,
 	showThumbnails,
@@ -12,7 +11,6 @@ import { updateDevice } from '$lib/apis/devices';
 import ToggleSwitch from '../common/ToggleSwitch';
 
 export default function General() {
-	const version = useStore(appVersion);
 	const view = useStore(libraryView);
 	const thumbnails = useStore(showThumbnails);
 	const list = useStore(devices);
@@ -30,20 +28,6 @@ export default function General() {
 		<div className="flex flex-col h-full">
 			<div className="flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1.5 -mr-1.5">
 				<h2 className="text-sm text-gray-900 dark:text-white mb-4">General</h2>
-
-				<div className="mb-5">
-					<div className="flex items-baseline gap-2">
-						<span className="text-xs font-semibold text-gray-900 dark:text-white">
-							reMarkable WebUI
-						</span>
-						<span className="text-[0.6875rem] text-gray-400 dark:text-gray-600 font-mono">
-							v{version}
-						</span>
-					</div>
-					<p className="text-[0.8125rem] text-gray-500 mt-0.5">
-						Local web interface for reMarkable paper tablets over SSH.
-					</p>
-				</div>
 
 				<h3 className="text-xs text-gray-400 dark:text-gray-600 mb-2">Library</h3>
 				<div className="flex gap-1">
