@@ -1,4 +1,4 @@
-# rm-ui
+# reMarkable WebUI
 
 Local web interface for reMarkable paper tablets. Talks to the tablet over SSH, so it works over the USB cable with no wifi at all, and over wifi when SSH is enabled there.
 
@@ -27,7 +27,7 @@ Over USB the tablet always answers on `10.11.99.1`. Plug in the cable, start the
 
 Over wifi use the address shown under Settings › Wi-Fi. SSH over wifi is disabled by default on the Paper Pro; enable it with the `rm-ssh-over-wlan` tool on the tablet.
 
-Saved devices, including passwords, live in `~/.config/rm-ui/devices.json` with mode 600. The server only listens on `127.0.0.1`.
+Saved devices, including passwords, live in `~/.config/remarkable-webui/devices.json` with mode 600. The server only listens on `127.0.0.1`.
 
 ## Running
 
@@ -61,7 +61,7 @@ xochitl, the tablet's interface, only reads document metadata at startup. After 
 - reMarkable 2: reads the framebuffer from xochitl's memory using the offsets known from reStream, picked by firmware version.
 - Tablets with the DRM display stack (Paper Pro and newer, including the i.MX93 "Tatsu" hardware): reads the panel size from the device tree, then walks the buffer headers after the last `/dev/dri/card0` mapping in xochitl's memory, the way goMarkableStream does.
 
-On first use the app copies a small static helper (`tools/rmfb.c`, prebuilt in `server/bin/` for aarch64 and armv7) to `/home/root/.cache/rm-ui/` on the tablet. It reads the framebuffer 25 times a second and streams only the rows that changed, run-length encoded, so a stroke costs a few kilobytes and a full refresh about 50 KB. Press `f` for full screen, `r` to rotate, `i` to invert.
+On first use the app copies a small static helper (`tools/rmfb.c`, prebuilt in `server/bin/` for aarch64 and armv7) to `/home/root/.cache/remarkable-webui/` on the tablet. It reads the framebuffer 25 times a second and streams only the rows that changed, run-length encoded, so a stroke costs a few kilobytes and a full refresh about 50 KB. Press `f` for full screen, `r` to rotate, `i` to invert.
 
 Rebuild the helper with zig: `zig cc -target aarch64-linux-musl -O2 -static -s -o server/bin/rmfb-aarch64 tools/rmfb.c` (and `arm-linux-musleabihf` for `rmfb-armv7l`).
 

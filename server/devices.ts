@@ -10,7 +10,7 @@ export interface StoredDevice extends DeviceInput {
 	id: string;
 }
 
-const configDir = path.join(homedir(), '.config', 'rm-ui');
+const configDir = path.join(homedir(), '.config', 'remarkable-webui');
 const configFile = path.join(configDir, 'devices.json');
 
 export const USB_HOST = '10.11.99.1';

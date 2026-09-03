@@ -18,7 +18,7 @@ interface Plan {
 }
 
 const HELPER_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'bin');
-const REMOTE_DIR = '/home/root/.cache/rm-ui';
+const REMOTE_DIR = '/home/root/.cache/remarkable-webui';
 const HEADER_SIZE = 10;
 const PACKET_HEADER = 8;
 

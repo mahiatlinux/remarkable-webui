@@ -33,7 +33,9 @@ export default function General() {
 
 				<div className="mb-5">
 					<div className="flex items-baseline gap-2">
-						<span className="text-xs font-semibold text-gray-900 dark:text-white">reMarkable</span>
+						<span className="text-xs font-semibold text-gray-900 dark:text-white">
+							reMarkable WebUI
+						</span>
 						<span className="text-[0.6875rem] text-gray-400 dark:text-gray-600 font-mono">
 							v{version}
 						</span>

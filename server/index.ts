@@ -60,5 +60,5 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(port, '127.0.0.1', () => {
-	console.log(`rm-ui server listening on http://127.0.0.1:${port}`);
+	console.log(`remarkable-webui server listening on http://127.0.0.1:${port}`);
 });

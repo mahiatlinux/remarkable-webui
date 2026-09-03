@@ -106,7 +106,7 @@ function baseName(filename: string): string {
 }
 
 async function stageTemp(stream: Readable): Promise<string> {
-	const target = path.join(tmpdir(), `rm-ui-${randomUUID()}.zip`);
+	const target = path.join(tmpdir(), `remarkable-webui-${randomUUID()}.zip`);
 	await pipeline(stream, createWriteStream(target));
 	return target;
 }

@@ -130,7 +130,7 @@ export async function addTemplate(session: Session, input: TemplateInput): Promi
 	const id = randomUUID();
 	const now = String(Date.now());
 	const source = {
-		author: 'rm-ui',
+		author: 'remarkable-webui',
 		templateVersion: '1.0.0',
 		supportedScreens: SUPPORTED_SCREENS,
 		...doc,
@@ -151,7 +151,7 @@ export async function addTemplate(session: Session, input: TemplateInput): Promi
 				new: true,
 				parent: '',
 				pinned: false,
-				source: 'rm-ui',
+				source: 'remarkable-webui',
 				type: 'TemplateType',
 				visibleName: name
 			},
