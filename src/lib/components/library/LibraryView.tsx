@@ -12,8 +12,6 @@ import { toast } from 'sonner';
 import type { LibraryItem } from '$shared/types';
 import { useStore } from '$lib/store';
 import {
-	activeDeviceId,
-	devices,
 	library,
 	libraryError,
 	libraryLoading,
@@ -31,7 +29,6 @@ import {
 	pinItem,
 	purgeItems,
 	renameItem,
-	restartXochitl,
 	restoreItems,
 	trashItems,
 	uploadDocuments
@@ -80,9 +77,6 @@ export default function LibraryView() {
 	const view = useStore(libraryView);
 	const sort = useStore(librarySort);
 	const thumbnails = useStore(showThumbnails);
-	const deviceList = useStore(devices);
-	const activeId = useStore(activeDeviceId);
-	const device = deviceList.find((entry) => entry.id === activeId);
 
 	const inTrash = folderId === 'trash';
 	const folder = inTrash || !folderId ? null : items.get(folderId);
@@ -432,21 +426,6 @@ export default function LibraryView() {
 					)}
 				</div>
 			</PageHeader>
-
-			{device?.pendingRestart && !device.autoRestart && (
-				<div className="flex items-center gap-2 px-4 h-8 text-[0.6875rem] bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-white/6">
-					<Icon name="warning" size={12} />
-					<span className="flex-1">
-						Changes are saved but the tablet shows them after xochitl restarts.
-					</span>
-					<button
-						className="text-gray-900 dark:text-white hover:underline"
-						onClick={() => run(() => restartXochitl(), 'xochitl restarted')}
-					>
-						Restart now
-					</button>
-				</div>
-			)}
 
 			<div
 				className="flex-1 min-h-0 overflow-y-auto scrollbar-hover"

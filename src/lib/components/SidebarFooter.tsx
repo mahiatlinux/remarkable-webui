@@ -43,7 +43,7 @@ export default function SidebarFooter({ onsettings }: Props) {
 
 	return (
 		<>
-			{current?.pendingRestart && (
+			{current?.pendingRestart && !current.autoRestart && (
 				<div className="mx-1.5 mb-1 px-2 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 text-[0.6875rem] text-gray-600 dark:text-gray-400">
 					<div className="flex items-center gap-1.5">
 						<Icon name="warning" size={12} />
