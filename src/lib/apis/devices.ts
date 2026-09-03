@@ -1,11 +1,15 @@
 import type { DeviceInput, DeviceState, UsbProbe } from '$shared/types';
-import { devices } from '$lib/stores';
+import { devices, devicesLoaded } from '$lib/stores';
 import { json, request } from './client';
 
 export async function refreshDevices(): Promise<DeviceState[]> {
-	const list = await request<DeviceState[]>('/api/devices');
-	devices.set(list);
-	return list;
+	try {
+		const list = await request<DeviceState[]>('/api/devices');
+		devices.set(list);
+		return list;
+	} finally {
+		devicesLoaded.set(true);
+	}
 }
 
 export function upsertDeviceState(state: DeviceState) {

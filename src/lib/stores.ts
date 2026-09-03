@@ -31,6 +31,7 @@ export const sidebarWidth = persisted<number>('rm_sidebar_width', 220);
 export const appVersion = writable<string>('0.1.0');
 
 export const devices = writable<DeviceState[]>([]);
+export const devicesLoaded = writable<boolean>(false);
 export const activeDeviceId = persisted<string | null>('rm_active_device', null);
 
 export const library = writable<Map<string, LibraryItem>>(new Map());

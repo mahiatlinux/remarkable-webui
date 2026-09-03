@@ -20,6 +20,7 @@ import {
 	activeDeviceId,
 	borderContrast,
 	devices,
+	devicesLoaded,
 	library,
 	textScale,
 	theme,
@@ -40,6 +41,8 @@ function NotFound() {
 function RequireDevice({ children }: { children: React.ReactNode }) {
 	const id = useStore(activeDeviceId);
 	const list = useStore(devices);
+	const loaded = useStore(devicesLoaded);
+	if (!loaded) return null;
 	if (!id || !list.some((device) => device.id === id)) return <Navigate to="/" replace />;
 	return <>{children}</>;
 }
@@ -47,6 +50,7 @@ function RequireDevice({ children }: { children: React.ReactNode }) {
 export default function App() {
 	const active = useStore(activeDeviceId);
 	const list = useStore(devices);
+	const loaded = useStore(devicesLoaded);
 	const current = list.find((device) => device.id === active);
 	const status = current?.status;
 
@@ -94,7 +98,9 @@ export default function App() {
 						<Routes>
 							<Route
 								path="/"
-								element={current ? <Navigate to="/library" replace /> : <DevicesView />}
+								element={
+									!loaded ? null : current ? <Navigate to="/library" replace /> : <DevicesView />
+								}
 							/>
 							<Route path="/devices" element={<DevicesView />} />
 							<Route
