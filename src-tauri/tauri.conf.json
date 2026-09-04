@@ -1,0 +1,47 @@
+{
+	"$schema": "https://schema.tauri.app/config/2",
+	"productName": "reMarkable WebUI",
+	"version": "../package.json",
+	"identifier": "io.github.mahiatlinux.remarkable-webui",
+	"build": {
+		"beforeDevCommand": "npm run desktop:prepare && vite --port 5173 --strictPort",
+		"devUrl": "http://localhost:5173",
+		"beforeBuildCommand": "npm run check && npm run build && npm run desktop:prepare",
+		"frontendDist": "../dist"
+	},
+	"app": {
+		"windows": [
+			{
+				"label": "main",
+				"title": "reMarkable WebUI",
+				"width": 1180,
+				"height": 800,
+				"minWidth": 640,
+				"minHeight": 480,
+				"decorations": false,
+				"dragDropEnabled": false,
+				"backgroundColor": "#111214"
+			}
+		],
+		"security": {
+			"csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://127.0.0.1:*; connect-src ipc: http://ipc.localhost http://127.0.0.1:* ws://127.0.0.1:*; font-src 'self' data:; worker-src 'self' blob:; media-src 'self' blob:"
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": "all",
+		"category": "Productivity",
+		"shortDescription": "Your reMarkable tablet, on your desktop",
+		"externalBin": ["binaries/remarkable-node"],
+		"resources": { "resources/": "resources/" },
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.icns",
+			"icons/icon.ico"
+		],
+		"macOS": { "minimumSystemVersion": "12.0" },
+		"windows": { "nsis": { "installMode": "currentUser" } }
+	}
+}

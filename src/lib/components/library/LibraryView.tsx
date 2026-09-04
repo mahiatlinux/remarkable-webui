@@ -1,5 +1,9 @@
+import LibraryItems from './LibraryItems';
+import LibraryToolbar from './LibraryToolbar';
+import LibraryDialogs, { type LibraryDialog } from './LibraryDialogs';
+import { useLibrarySelection } from './useLibrarySelection';
+import { compareItems, folderCrumbs } from './contents';
 import {
-	useEffect,
 	useMemo,
 	useRef,
 	useState,
@@ -17,18 +21,13 @@ import {
 	libraryLoading,
 	librarySort,
 	libraryView,
-	showThumbnails,
-	type LibrarySort
+	showThumbnails
 } from '$lib/stores';
 import {
-	createFolder,
-	createNotebook,
 	exportUrl,
 	loadLibrary,
 	moveItems,
 	pinItem,
-	purgeItems,
-	renameItem,
 	restoreItems,
 	trashItems,
 	uploadDocuments
@@ -36,37 +35,8 @@ import {
 import { downloadUrl } from '$lib/apis/client';
 import DropdownMenu from '../DropdownMenu';
 import Icon from '../Icon';
-import PageHeader, { EmptyState, ToolButton } from '../common/PageHeader';
-import Spinner from '../common/Spinner';
-import { ConfirmDialog, PromptDialog } from '../common/Dialog';
-import ItemCard, { ITEMS_MIME } from './ItemCard';
-import MoveDialog from './MoveDialog';
-import NewNotebookDialog from './NewNotebookDialog';
-
-type Dialog =
-	| { kind: 'rename'; item: LibraryItem }
-	| { kind: 'new-folder' }
-	| { kind: 'new-notebook' }
-	| { kind: 'move'; ids: string[] }
-	| { kind: 'purge'; ids: string[] };
-
-const SORT_LABEL: Record<LibrarySort, string> = {
-	name: 'Name',
-	modified: 'Last modified',
-	opened: 'Last opened',
-	size: 'Size'
-};
-
-function compareItems(sort: LibrarySort) {
-	return (a: LibraryItem, b: LibraryItem) => {
-		if ((a.type === 'folder') !== (b.type === 'folder')) return a.type === 'folder' ? -1 : 1;
-		if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-		if (sort === 'name') return a.name.localeCompare(b.name);
-		if (sort === 'size') return b.sizeKb - a.sizeKb || a.name.localeCompare(b.name);
-		if (sort === 'opened') return b.lastOpened - a.lastOpened || a.name.localeCompare(b.name);
-		return b.lastModified - a.lastModified || a.name.localeCompare(b.name);
-	};
-}
+import { EmptyState } from '../common/PageHeader';
+import { ITEMS_MIME } from './ItemCard';
 
 export default function LibraryView() {
 	const { folderId = '' } = useParams();
@@ -87,39 +57,13 @@ export default function LibraryView() {
 		[items, parent, sort]
 	);
 
-	const crumbs = useMemo(() => {
-		const chain: LibraryItem[] = [];
-		let current = folder;
-		while (current) {
-			chain.unshift(current);
-			current = items.get(current.parent);
-		}
-		return chain;
-	}, [items, folder]);
-
-	const [selected, setSelected] = useState<Set<string>>(new Set());
-	const [anchor, setAnchor] = useState<string | null>(null);
+	const crumbs = useMemo(() => folderCrumbs(items, folderId), [items, folderId]);
+	const { selected, setSelected, setAnchor, select } = useLibrarySelection(parent, children);
 	const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-	const [dialog, setDialog] = useState<Dialog | null>(null);
+	const [dialog, setDialog] = useState<LibraryDialog | null>(null);
 	const [dragOver, setDragOver] = useState(false);
-	const [showSort, setShowSort] = useState(false);
-	const [showNew, setShowNew] = useState(false);
-	const sortButton = useRef<HTMLButtonElement | null>(null);
-	const newButton = useRef<HTMLButtonElement | null>(null);
 	const fileInput = useRef<HTMLInputElement | null>(null);
 	const container = useRef<HTMLDivElement | null>(null);
-
-	useEffect(() => {
-		setSelected(new Set());
-		setAnchor(null);
-	}, [parent]);
-
-	useEffect(() => {
-		setSelected((current) => {
-			const next = new Set([...current].filter((id) => items.has(id)));
-			return next.size === current.size ? current : next;
-		});
-	}, [items]);
 
 	async function run(action: () => Promise<unknown>, success?: string) {
 		try {
@@ -134,27 +78,6 @@ export default function LibraryView() {
 
 	function open(item: LibraryItem) {
 		navigate(item.type === 'folder' ? `/library/${item.id}` : `/doc/${item.id}`);
-	}
-
-	function select(item: LibraryItem, event: MouseEvent) {
-		event.stopPropagation();
-		if (event.shiftKey && anchor) {
-			const ids = children.map((entry) => entry.id);
-			const from = ids.indexOf(anchor);
-			const to = ids.indexOf(item.id);
-			const [start, end] = from < to ? [from, to] : [to, from];
-			setSelected(new Set(ids.slice(start, end + 1)));
-			return;
-		}
-		if (event.metaKey || event.ctrlKey) {
-			const next = new Set(selected);
-			if (next.has(item.id)) next.delete(item.id);
-			else next.add(item.id);
-			setSelected(next);
-		} else {
-			setSelected(new Set([item.id]));
-		}
-		setAnchor(item.id);
 	}
 
 	function contextMenu(event: MouseEvent, item?: LibraryItem) {
@@ -335,97 +258,15 @@ export default function LibraryView() {
 			onDragLeave={() => setDragOver(false)}
 			onDrop={onDrop}
 		>
-			<PageHeader>
-				<nav className="flex items-center gap-0.5 min-w-0 text-xs">
-					<button
-						className={`flex items-center gap-1 h-7 px-1.5 rounded-full transition-colors ${
-							!folderId ? 'page-title' : 'app-button-ghost'
-						}`}
-						onClick={() => navigate('/library')}
-						onDragOver={(event) =>
-							event.dataTransfer.types.includes(ITEMS_MIME) && event.preventDefault()
-						}
-						onDrop={(event) => {
-							const ids = JSON.parse(event.dataTransfer.getData(ITEMS_MIME) || '[]') as string[];
-							if (ids.length) void moveTo(ids, '');
-						}}
-					>
-						<Icon name="home" size={13} />
-						My files
-					</button>
-					{inTrash && (
-						<>
-							<Icon name="chevron-right" size={12} class="app-icon-muted" />
-							<span className="px-1.5 page-title">Trash</span>
-						</>
-					)}
-					{crumbs.map((crumb, index) => (
-						<span key={crumb.id} className="flex items-center gap-0.5 min-w-0">
-							<Icon name="chevron-right" size={12} class="app-icon-muted" />
-							<button
-								className={`h-7 px-1.5 rounded-full truncate max-w-[12rem] transition-colors ${
-									index === crumbs.length - 1 ? 'page-title' : 'app-button-ghost'
-								}`}
-								onClick={() => navigate(`/library/${crumb.id}`)}
-								onDragOver={(event) =>
-									event.dataTransfer.types.includes(ITEMS_MIME) && event.preventDefault()
-								}
-								onDrop={(event) => {
-									const ids = JSON.parse(
-										event.dataTransfer.getData(ITEMS_MIME) || '[]'
-									) as string[];
-									if (ids.length) void moveTo(ids, crumb.id);
-								}}
-							>
-								{crumb.name}
-							</button>
-						</span>
-					))}
-				</nav>
-				<div className="ml-auto flex items-center gap-0.5">
-					{loading && <Spinner size={12} class="mr-1" />}
-					{selected.size > 0 && (
-						<span className="text-[0.6875rem] app-muted mr-1 tabular-nums">
-							{selected.size} selected
-						</span>
-					)}
-					<ToolButton
-						ref={sortButton}
-						icon={<Icon name="sort" size={14} />}
-						label={`Sort: ${SORT_LABEL[sort]}`}
-						onclick={() => setShowSort(true)}
-					/>
-					<ToolButton
-						icon={<Icon name={view === 'grid' ? 'list' : 'grid'} size={14} />}
-						label={view === 'grid' ? 'List view' : 'Grid view'}
-						onclick={() => libraryView.set(view === 'grid' ? 'list' : 'grid')}
-					/>
-					<ToolButton
-						icon={<Icon name="refresh" size={14} />}
-						label="Refresh"
-						onclick={() => void loadLibrary()}
-					/>
-					{inTrash ? (
-						<button
-							className="app-button-ghost flex items-center gap-1.5 h-7 px-2 rounded-full text-xs"
-							disabled={children.length === 0}
-							onClick={() => setDialog({ kind: 'purge', ids: children.map((item) => item.id) })}
-						>
-							<Icon name="trash" size={13} />
-							Empty trash
-						</button>
-					) : (
-						<button
-							ref={newButton}
-							className="app-button flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-extrabold ml-1"
-							onClick={() => setShowNew(true)}
-						>
-							<Icon name="plus" size={13} />
-							New
-						</button>
-					)}
-				</div>
-			</PageHeader>
+			<LibraryToolbar
+				folderId={folderId}
+				crumbs={crumbs}
+				selectedCount={selected.size}
+				children={children}
+				setDialog={setDialog}
+				moveTo={moveTo}
+				onupload={() => fileInput.current?.click()}
+			/>
 
 			<div
 				className="flex-1 min-h-0 overflow-y-auto scrollbar-hover"
@@ -446,63 +287,18 @@ export default function LibraryView() {
 						title={inTrash ? 'Trash is empty' : 'Nothing here yet'}
 						hint={inTrash ? undefined : 'Drop PDF, EPUB or rmdoc files anywhere to upload them.'}
 					/>
-				) : view === 'grid' ? (
-					<div className="p-3 flex flex-col gap-3">
-						{[
-							children.filter((item) => item.type === 'folder'),
-							children.filter((item) => item.type !== 'folder')
-						]
-							.filter((group) => group.length > 0)
-							.map((group) => (
-								<div
-									key={group[0].type === 'folder' ? 'folders' : 'documents'}
-									className={`grid gap-2 ${
-										group[0].type === 'folder'
-											? 'grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]'
-											: 'grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]'
-									}`}
-								>
-									{group.map((item) => (
-										<ItemCard
-											key={item.id}
-											item={item}
-											view="grid"
-											thumbnails={thumbnails}
-											selected={selected.has(item.id)}
-											onselect={(event) => select(item, event)}
-											onopen={() => open(item)}
-											oncontextmenu={(event) => contextMenu(event, item)}
-											ondragstart={(event) => startDrag(item, event)}
-											ondropitems={(ids) => void moveTo(ids, item.id)}
-										/>
-									))}
-								</div>
-							))}
-					</div>
 				) : (
-					<div className="p-2">
-						<div className="grid grid-cols-[minmax(0,1fr)_5rem_4rem_6rem_5rem] gap-3 px-2 h-7 items-center text-[0.625rem] text-gray-400 dark:text-gray-600">
-							<span>Name</span>
-							<span>Type</span>
-							<span>Pages</span>
-							<span>Modified</span>
-							<span className="text-right">Size</span>
-						</div>
-						{children.map((item) => (
-							<ItemCard
-								key={item.id}
-								item={item}
-								view="list"
-								thumbnails={thumbnails}
-								selected={selected.has(item.id)}
-								onselect={(event) => select(item, event)}
-								onopen={() => open(item)}
-								oncontextmenu={(event) => contextMenu(event, item)}
-								ondragstart={(event) => startDrag(item, event)}
-								ondropitems={(ids) => void moveTo(ids, item.id)}
-							/>
-						))}
-					</div>
+					<LibraryItems
+						items={children}
+						view={view}
+						thumbnails={thumbnails}
+						selected={selected}
+						onselect={select}
+						onopen={open}
+						oncontextmenu={contextMenu}
+						ondragstart={startDrag}
+						onmove={moveTo}
+					/>
 				)}
 			</div>
 
@@ -529,94 +325,14 @@ export default function LibraryView() {
 
 			{menu && <DropdownMenu anchor={menu} items={menuItems()} onclose={() => setMenu(null)} />}
 
-			{showSort && sortButton.current && (
-				<DropdownMenu
-					anchor={sortButton.current}
-					align="end"
-					items={(Object.keys(SORT_LABEL) as LibrarySort[]).map((key) => ({
-						label: SORT_LABEL[key],
-						active: sort === key,
-						check: true,
-						onclick: () => librarySort.set(key)
-					}))}
-					onclose={() => setShowSort(false)}
-				/>
-			)}
-
-			{showNew && newButton.current && (
-				<DropdownMenu
-					anchor={newButton.current}
-					align="end"
-					items={[
-						{
-							label: 'Folder',
-							icon: 'folder-plus',
-							onclick: () => setDialog({ kind: 'new-folder' })
-						},
-						{
-							label: 'Notebook',
-							icon: 'page-plus',
-							onclick: () => setDialog({ kind: 'new-notebook' })
-						},
-						{ divider: true, label: '', onclick: () => {} },
-						{
-							label: 'Upload PDF, EPUB or rmdoc',
-							icon: 'upload',
-							onclick: () => fileInput.current?.click()
-						}
-					]}
-					onclose={() => setShowNew(false)}
-				/>
-			)}
-
-			{dialog?.kind === 'rename' && (
-				<PromptDialog
-					title="Rename"
-					initial={dialog.item.name}
-					confirmLabel="Rename"
-					onsubmit={(name) => run(() => renameItem(dialog.item.id, name), 'Renamed')}
-					onclose={() => setDialog(null)}
-				/>
-			)}
-			{dialog?.kind === 'new-folder' && (
-				<PromptDialog
-					title="New folder"
-					placeholder="Folder name"
-					confirmLabel="Create"
-					onsubmit={(name) => run(() => createFolder(name, folderId), 'Folder created')}
-					onclose={() => setDialog(null)}
-				/>
-			)}
-			{dialog?.kind === 'new-notebook' && (
-				<NewNotebookDialog
-					onsubmit={(name, template) =>
-						run(
-							() => createNotebook(name, folderId, template.filename, template.landscape),
-							'Notebook created'
-						)
-					}
-					onclose={() => setDialog(null)}
-				/>
-			)}
-			{dialog?.kind === 'move' && (
-				<MoveDialog
-					items={items}
-					moving={dialog.ids}
-					current={parent}
-					onmove={(target) => moveTo(dialog.ids, target)}
-					onclose={() => setDialog(null)}
-				/>
-			)}
-			{dialog?.kind === 'purge' && (
-				<ConfirmDialog
-					title={`Delete ${dialog.ids.length === 1 ? 'this item' : `${dialog.ids.length} items`} permanently?`}
-					message="The files are removed from the tablet. This cannot be undone."
-					confirmLabel="Delete"
-					danger
-					onconfirm={() => run(() => purgeItems(dialog.ids), 'Deleted')}
-					onclose={() => setDialog(null)}
-				/>
-			)}
+			<LibraryDialogs
+				dialog={dialog}
+				onclose={() => setDialog(null)}
+				items={items}
+				parent={parent}
+				run={run}
+				moveTo={moveTo}
+			/>
 		</div>
 	);
 }

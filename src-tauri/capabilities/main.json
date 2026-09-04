@@ -1,0 +1,16 @@
+{
+	"$schema": "../gen/schemas/desktop-schema.json",
+	"identifier": "main",
+	"description": "Window controls and files selected in the save dialog",
+	"windows": ["main"],
+	"permissions": [
+		"core:default",
+		"core:window:allow-close",
+		"core:window:allow-minimize",
+		"core:window:allow-toggle-maximize",
+		"core:window:allow-start-dragging",
+		"dialog:allow-save",
+		"fs:allow-write-file",
+		"opener:allow-open-url"
+	]
+}

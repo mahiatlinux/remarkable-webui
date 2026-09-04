@@ -316,3 +316,7 @@ export function dropSession(id: string) {
 export function allStates(): DeviceState[] {
 	return listDevices().map((device) => getSession(device.id).state());
 }
+
+export function disconnectAll() {
+	for (const session of sessions.values()) session.disconnect();
+}

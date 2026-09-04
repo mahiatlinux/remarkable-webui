@@ -1,19 +1,12 @@
 import type { ReactNode } from 'react';
-import { sidebarOpen } from '$lib/stores';
-import { useStore } from '$lib/store';
 
 interface Props {
 	children: ReactNode;
 }
 
 export default function PageHeader({ children }: Props) {
-	const open = useStore(sidebarOpen);
 	return (
-		<header
-			className={`flex items-center gap-1.5 h-11 pr-3 shrink-0 border-b ${open ? 'pl-4' : 'pl-11'}`}
-		>
-			{children}
-		</header>
+		<header className="page-header flex items-center gap-2 h-12 px-4 shrink-0">{children}</header>
 	);
 }
 

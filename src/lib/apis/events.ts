@@ -2,9 +2,10 @@ import type { ServerEvent } from '$shared/types';
 import { activeDeviceId, devices } from '$lib/stores';
 import { upsertDeviceState } from './devices';
 import { loadLibrary } from './library';
+import { apiUrl } from '$lib/desktop';
 
 export function connectEvents(): () => void {
-	const source = new EventSource('/api/events');
+	const source = new EventSource(apiUrl('/api/events'));
 	source.onmessage = (message) => {
 		const event = JSON.parse(message.data) as ServerEvent;
 		if (event.type === 'device') {

@@ -25,7 +25,6 @@ kbd.sidebar-nav-kbd {
 .sidebar-nav-link.active {
 	color: var(--app-fg);
 	background: var(--app-surface);
-	box-shadow: inset 0 0 0 1px var(--app-border);
 }
 `;
 

@@ -25,7 +25,7 @@ function persisted<T>(key: string, initial: T): Writable<T> {
 	return store;
 }
 
-export const sidebarOpen = writable<boolean>(true);
+export const sidebarOpen = persisted<boolean>('rm_sidebar_open', true);
 export const sidebarWidth = persisted<number>('rm_sidebar_width', 220);
 
 export const appVersion = writable<string>(__APP_VERSION__);
@@ -43,7 +43,7 @@ export const librarySort = persisted<LibrarySort>('rm_library_sort', 'modified')
 export const showThumbnails = persisted<boolean>('rm_thumbnails', true);
 export const developerNavOpen = persisted<boolean>('rm_developer_nav', false);
 
-export const theme = persisted<Theme>('rm_theme', 'dark');
+export const theme = persisted<Theme>('rm_theme', 'light');
 export const themeConfig = persisted<ThemeConfig | null>('rm_theme_config', null);
 export const textScale = persisted<number | null>('rm_text_scale', 1.2);
 export const borderContrast = persisted<number | null>('rm_border_contrast', 12);

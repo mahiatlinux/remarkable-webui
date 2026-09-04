@@ -28,7 +28,7 @@ export default function SettingsModal({ onclose, initialTab = 'general' }: Props
 			onclose={onclose}
 			class="w-full max-w-2xl mx-4 md:mx-0 flex flex-col md:flex-row max-h-[78vh] md:h-[30rem] lg:h-[32rem]"
 		>
-			<nav className="shrink-0 min-w-0 md:min-h-0 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto scrollbar-none border-b md:border-b-0 md:border-r border-gray-200 dark:border-white/6 md:w-[11.25rem]">
+			<nav className="shrink-0 min-w-0 md:min-h-0 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto scrollbar-none md:w-[11.25rem]">
 				<div className="flex w-max min-w-full md:w-auto md:min-w-0 md:flex-col p-1 gap-px">
 					<button
 						className="flex items-center gap-1.5 h-7 px-2 md:w-full shrink-0 rounded-full text-xs text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-75 md:mb-1"

@@ -2,6 +2,8 @@
 
 Local web interface for reMarkable paper tablets over SSH. Works over the USB cable with no wifi, and over wifi when SSH is enabled there.
 
+Desktop packages use Tauri 2 and include the Node.js backend. The toolbar has a sidebar toggle, search and settings. Window controls follow the platform; macOS keeps its native traffic lights. Fonts ship with the app and finish loading before the first screen appears.
+
 ![Library](docs/screenshots/library.png)
 
 ![Document viewer](docs/screenshots/document.png)
@@ -33,6 +35,35 @@ npm run dev
 The dev server is on http://localhost:5173 with the API on port 8787. For production run `npm run build` then `npm start`, both served from port 8787 (or `PORT`). Release tarballs ship the client prebuilt: unpack, `npm ci --omit=dev`, `npm start`.
 
 Saved devices, including passwords, live in `~/.config/remarkable-webui/devices.json` with mode 600. The server listens on `127.0.0.1` only.
+
+## Desktop builds
+
+Install Node.js 22+, Rust and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your platform, then:
+
+```sh
+npm ci
+npm run desktop:dev
+```
+
+Build a release installer with `npm run desktop:build`. Outputs are under `src-tauri/target/release/bundle/`. Linux can select formats with `npm run desktop:build -- --bundles deb,appimage`. Windows uses `--bundles nsis`; macOS uses `--bundles dmg`.
+
+The build bundles the backend and copies the build machine's Node executable. Build on the same OS and architecture as the installer. End users do not need Node or Rust. The desktop backend uses a random loopback port and a token unique to each app session. Closing the app stops that backend. Saved tablet connections share the web app's config directory.
+
+The `desktop` workflow builds Linux x64, Windows x64 and both macOS architectures. Run it manually for downloadable CI artifacts. Version tags attach installers to the GitHub release alongside the web archive. Packages are unsigned unless signing credentials are configured on the build machine.
+
+## Development checks
+
+```sh
+npm run check
+npm test
+npm run build
+npx playwright install chromium
+npm run test:ui
+npm run desktop:prepare
+node tools/smoke-sidecar.mjs
+```
+
+Tests use temporary device storage and a local SSH test server. Browser tests mock the tablet API. The HTTP handlers are grouped under `server/routes/`; `server/app.ts` creates the API independently of process startup. Library selection, menus and dialogs live in separate modules. Route components load on demand.
 
 ## Notes
 

@@ -161,7 +161,15 @@ export default function DevicesView() {
 			</PageHeader>
 
 			<div className="flex-1 min-h-0 overflow-y-auto scrollbar-hover">
-				<div className="max-w-xl mx-auto w-full px-4 py-6 flex flex-col gap-6">
+				<div className="max-w-2xl mx-auto w-full px-5 py-7 flex flex-col gap-5">
+					<div className="device-intro">
+						<h1>{list.length ? 'Your devices' : 'Connect your reMarkable'}</h1>
+						<p>
+							{list.length
+								? 'Open your library or connect another tablet.'
+								: 'Connect your reMarkable to browse notebooks, move documents and pick up where you left off.'}
+						</p>
+					</div>
 					{list.length > 0 && (
 						<section>
 							<h2 className="text-xs text-gray-400 dark:text-gray-600 mb-2">Saved devices</h2>
@@ -226,8 +234,8 @@ export default function DevicesView() {
 					)}
 
 					{draft ? (
-						<form onSubmit={save} className="rounded-2xl border overflow-hidden">
-							<div className="flex items-center justify-between h-10 px-4 border-b">
+						<form onSubmit={save} className="device-form overflow-hidden">
+							<div className="flex items-center justify-between h-11 px-4">
 								<h2 className="text-xs text-gray-900 dark:text-white">
 									{draft.id ? 'Edit device' : 'New device'}
 								</h2>
@@ -242,7 +250,7 @@ export default function DevicesView() {
 								)}
 							</div>
 							{!draft.id && (
-								<ol className="flex flex-col gap-3 px-4 py-3.5 border-b">
+								<ol className="device-guide flex flex-col gap-3 px-4 py-3.5">
 									<Step
 										number={1}
 										title={
@@ -329,7 +337,7 @@ export default function DevicesView() {
 									/>
 								</Row>
 							</div>
-							<div className="flex justify-end gap-1.5 px-4 py-3 border-t">
+							<div className="flex justify-end gap-1.5 px-4 pt-1 pb-4">
 								{list.length > 0 && (
 									<button
 										type="button"

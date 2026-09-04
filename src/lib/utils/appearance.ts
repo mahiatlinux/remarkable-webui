@@ -24,7 +24,7 @@ export type AppearancePreferences = {
 type ResolvedTheme = 'dark' | 'light';
 
 const DEFAULT_UI_FONT =
-	"'Manrope', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif";
+	"'Manrope Variable', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, sans-serif";
 export const DEFAULT_BORDER_CONTRAST = 1.5;
 export const DEFAULT_DIVIDER_CONTRAST = 0.875;
 export const MAX_BORDER_CONTRAST = 16;
@@ -93,8 +93,8 @@ export function sanitizeThemeConfig(value: unknown): ThemeConfig | null {
 export function defaultThemeConfig(theme: Theme): Required<ThemeColors> & { uiFont: string } {
 	const resolved = resolveThemeMode(theme);
 	return {
-		background: resolved === 'dark' ? '#0b0d10' : '#ffffff',
-		foreground: resolved === 'dark' ? '#e7e9ed' : '#525252',
+		background: resolved === 'dark' ? '#111214' : '#e9eaed',
+		foreground: resolved === 'dark' ? '#e8e9eb' : '#20242c',
 		uiFont: DEFAULT_UI_FONT
 	};
 }

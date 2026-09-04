@@ -1,23 +1,16 @@
-import {
-	useEffect,
-	useState,
-	type CSSProperties,
-	type PointerEvent as ReactPointerEvent
-} from 'react';
+import { useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { sidebarOpen, sidebarWidth } from '$lib/stores';
 import { useStore } from '$lib/store';
 import SidebarFooter from './SidebarFooter';
 import SidebarHeader from './SidebarHeader';
 import SidebarNav from './SidebarNav';
-import SearchModal from './SearchModal';
-import SettingsModal, { type SettingsTab } from './SettingsModal';
-import { tooltip } from '$lib/tooltip';
+import type { SettingsTab } from './SettingsModal';
 
 const css = `
 .sidebar {
 	position: fixed;
 	left: 0;
-	top: 0;
+	top: var(--app-titlebar-height);
 	bottom: 0;
 	width: var(--sw, 220px);
 	max-width: 100vw;
@@ -45,101 +38,30 @@ const css = `
 .sidebar-content {
 	display: flex;
 	flex: 1 0 auto;
+	box-sizing: border-box;
 	flex-direction: column;
 	width: var(--sw, 220px);
 	min-width: var(--sw, 220px);
 	min-height: 0;
 	opacity: 1;
-	filter: blur(0);
 	transition:
-		opacity 140ms 60ms ease,
-		filter 180ms 40ms ease;
+	opacity 120ms ease;
 }
 
 .sidebar.closed .sidebar-content {
 	opacity: 0;
-	filter: blur(3px);
 	transition:
-		opacity 90ms ease,
-		filter 120ms ease;
+	opacity 90ms ease;
 }
 
 .sidebar-backdrop {
 	background: rgb(0 0 0 / 0.42);
-	animation: sidebar-backdrop-in 140ms linear both;
-}
-
-.sidebar-reopen {
-	position: fixed;
-	left: calc(var(--app-gutter) + 0.5rem + env(safe-area-inset-left, 0px));
-	top: calc(var(--app-gutter) + 0.5rem + env(safe-area-inset-top, 0px));
-	z-index: 60;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 1.75rem;
-	height: 1.75rem;
-	padding: 0;
-	border: 0;
-	border-radius: 624.9375rem;
-	background: transparent;
-	color: var(--app-fg-subtle);
-	cursor: pointer;
-	animation: sidebar-reopen-in 120ms ease-out both;
-	transition:
-		color 120ms ease,
-		background-color 120ms ease,
-		opacity 120ms ease;
-}
-
-.sidebar-icon {
-	display: block;
-	width: 0.875rem;
-	height: 0.875rem;
-	background-color: currentColor;
-	-webkit-mask-position: center;
-	mask-position: center;
-	-webkit-mask-repeat: no-repeat;
-	mask-repeat: no-repeat;
-	-webkit-mask-size: contain;
-	mask-size: contain;
-}
-
-.sidebar-icon-open {
-	-webkit-mask-image: url('/icons/panel-left-open.svg');
-	mask-image: url('/icons/panel-left-open.svg');
-}
-
-.sidebar-reopen:hover {
-	background: var(--app-hover);
-	color: var(--app-fg);
-}
-
-.sidebar-reopen:active {
-	opacity: 0.68;
-}
-
-@keyframes sidebar-backdrop-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
-@keyframes sidebar-reopen-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
 }
 
 @media (min-width: 768px) {
 	.sidebar {
 		position: relative;
+		top: 0;
 		z-index: auto;
 		width: var(--sw, 220px);
 		flex: 0 0 var(--sw, 220px);
@@ -183,7 +105,6 @@ const css = `
 @media (prefers-reduced-motion: reduce) {
 	.sidebar,
 	.sidebar-content,
-	.sidebar-reopen,
 	.sidebar button:not(:disabled),
 	.sidebar a {
 		transition: none;
@@ -192,13 +113,15 @@ const css = `
 }
 `;
 
-export default function Sidebar() {
+export default function Sidebar({
+	onsearch,
+	onsettings
+}: {
+	onsearch: () => void;
+	onsettings: (tab?: SettingsTab) => void;
+}) {
 	const open = useStore(sidebarOpen);
 	const width = useStore(sidebarWidth);
-
-	const [showSearch, setShowSearch] = useState(false);
-	const [showSettings, setShowSettings] = useState(false);
-	const [settingsTab, setSettingsTab] = useState<SettingsTab>('general');
 
 	const MIN_WIDTH = 160;
 	const MAX_WIDTH = 400;
@@ -230,27 +153,6 @@ export default function Sidebar() {
 		document.body.style.userSelect = 'none';
 	}
 
-	function openSettings(tab: SettingsTab = 'general') {
-		setSettingsTab(tab);
-		setShowSettings(true);
-	}
-
-	useEffect(() => {
-		function handleKeydown(event: KeyboardEvent) {
-			const target = event.target as HTMLElement | null;
-			const typing =
-				target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
-			if (typing && !(event.metaKey || event.ctrlKey)) return;
-			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-				event.preventDefault();
-				setShowSearch((value) => !value);
-			}
-		}
-
-		window.addEventListener('keydown', handleKeydown);
-		return () => window.removeEventListener('keydown', handleKeydown);
-	}, []);
-
 	return (
 		<>
 			<style href="sidebar-css" precedence="default">
@@ -266,6 +168,8 @@ export default function Sidebar() {
 			)}
 
 			<aside
+				id="app-sidebar"
+				inert={!open}
 				className={`sidebar ${!open ? 'closed' : ''}`}
 				style={{ '--sw': `${width}px` } as CSSProperties}
 				aria-hidden={!open}
@@ -279,27 +183,10 @@ export default function Sidebar() {
 				></div>
 				<div className="sidebar-content">
 					<SidebarHeader />
-					<SidebarNav onopensearch={() => setShowSearch(true)} />
-					<SidebarFooter onsettings={openSettings} />
+					<SidebarNav onopensearch={onsearch} />
+					<SidebarFooter onsettings={onsettings} />
 				</div>
 			</aside>
-
-			{!open && (
-				<button
-					className="sidebar-reopen"
-					onClick={() => sidebarOpen.set(true)}
-					aria-label="Open sidebar"
-					ref={tooltip('Open sidebar')}
-				>
-					<span className="sidebar-icon sidebar-icon-open" aria-hidden="true"></span>
-				</button>
-			)}
-
-			{showSettings && (
-				<SettingsModal initialTab={settingsTab} onclose={() => setShowSettings(false)} />
-			)}
-
-			<SearchModal open={showSearch} onclose={() => setShowSearch(false)} />
 		</>
 	);
 }

@@ -1,3 +1,4 @@
+import { websocketUrl } from '$lib/desktop';
 import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -6,11 +7,6 @@ import { useStore } from '$lib/store';
 import { activeDeviceId, devices } from '$lib/stores';
 import Icon from '../Icon';
 import PageHeader, { ToolButton } from '../common/PageHeader';
-
-function wsUrl(path: string): string {
-	const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-	return `${protocol}://${location.host}${path}`;
-}
 
 export default function TerminalView() {
 	const deviceId = useStore(activeDeviceId);
@@ -38,7 +34,7 @@ export default function TerminalView() {
 		terminal.open(element);
 		fit.fit();
 		const socket = new WebSocket(
-			wsUrl(`/ws/terminal?device=${deviceId}&cols=${terminal.cols}&rows=${terminal.rows}`)
+			websocketUrl(`/ws/terminal?device=${deviceId}&cols=${terminal.cols}&rows=${terminal.rows}`)
 		);
 		socket.binaryType = 'arraybuffer';
 		socket.onopen = () => {

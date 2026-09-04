@@ -5,7 +5,7 @@ import type { DocumentDetail } from '$shared/types';
 import { useStore } from '$lib/store';
 import { library } from '$lib/stores';
 import { documentFileUrl, exportUrl, getDocument, thumbnailUrl } from '$lib/apis/library';
-import { downloadUrl } from '$lib/apis/client';
+import { downloadUrl, openDocumentUrl } from '$lib/apis/client';
 import type { Rendered } from '$lib/rm';
 import DropdownMenu from '../DropdownMenu';
 import Icon from '../Icon';
@@ -226,7 +226,7 @@ export default function DocumentView() {
 						<ToolButton
 							icon={<Icon name="external-link" size={14} />}
 							label={`Open source ${detail.item.type.toUpperCase()}`}
-							onclick={() => window.open(documentFileUrl(id), '_blank')}
+							onclick={() => openDocumentUrl(documentFileUrl(id), `${name}.${detail.item.type}`)}
 						/>
 					)}
 					<ToolButton

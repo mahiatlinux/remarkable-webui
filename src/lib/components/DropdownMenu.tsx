@@ -31,6 +31,7 @@ interface MenuItem {
 }
 
 interface Props {
+	id?: string;
 	items: MenuItem[];
 	anchor: { x: number; y: number } | HTMLElement;
 	onclose: () => void;
@@ -50,6 +51,7 @@ interface Props {
 }
 
 export default function DropdownMenu({
+	id,
 	items,
 	anchor,
 	onclose,
@@ -83,6 +85,20 @@ export default function DropdownMenu({
 	const lastAnchorState = useRef('');
 	const latest = useRef({ anchor, matchWidth, preferAbove, forceAbove, inlineAbove, align });
 	latest.current = { anchor, matchWidth, preferAbove, forceAbove, inlineAbove, align };
+	const close = useRef(onclose);
+	close.current = onclose;
+
+	useEffect(() => {
+		function keydown(event: KeyboardEvent) {
+			if (event.key !== 'Escape') return;
+			event.preventDefault();
+			event.stopPropagation();
+			close.current();
+			if (anchor instanceof HTMLElement) anchor.focus();
+		}
+		window.addEventListener('keydown', keydown, true);
+		return () => window.removeEventListener('keydown', keydown, true);
+	}, [anchor]);
 
 	function setMenuMaxHeight(value: number | undefined) {
 		menuMaxHeightRef.current = value;
@@ -340,6 +356,8 @@ export default function DropdownMenu({
 			></div>
 			<div
 				ref={menuEl}
+				id={id}
+				data-ready={ready}
 				className={`${
 					inlineAbove
 						? `absolute bottom-full mb-1 ${align === 'end' ? 'right-0' : 'left-0'}`

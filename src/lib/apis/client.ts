@@ -1,4 +1,6 @@
 import { activeDeviceId } from '$lib/stores';
+import { apiUrl, desktop } from '$lib/desktop';
+import { toast } from 'sonner';
 
 export class ApiError extends Error {
 	status: number;
@@ -18,7 +20,7 @@ async function parseError(res: Response): Promise<ApiError> {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-	const res = await fetch(path, init);
+	const res = await fetch(apiUrl(path), init);
 	if (!res.ok) throw await parseError(res);
 	if (res.status === 204) return undefined as T;
 	const type = res.headers.get('content-type') ?? '';
@@ -37,7 +39,7 @@ export function json<T>(path: string, method: string, body?: unknown): Promise<T
 export function devicePath(path: string): string {
 	const id = activeDeviceId.get();
 	if (!id) throw new ApiError(400, 'No device selected');
-	return `/api/d/${id}${path}`;
+	return apiUrl(`/api/d/${id}${path}`);
 }
 
 export async function uploadFiles(
@@ -49,7 +51,7 @@ export async function uploadFiles(
 	for (const file of files) form.append('file', file, file.name);
 	return new Promise((resolve, reject) => {
 		const xhr = new XMLHttpRequest();
-		xhr.open('POST', path);
+		xhr.open('POST', apiUrl(path));
 		xhr.upload.onprogress = (event) => {
 			if (event.lengthComputable && onProgress) onProgress(event.loaded / event.total);
 		};
@@ -72,6 +74,10 @@ export async function uploadFiles(
 }
 
 export function downloadUrl(url: string, filename?: string) {
+	if (desktop) {
+		void saveDownload(url, filename).catch((error: Error) => toast.error(error.message));
+		return;
+	}
 	const link = document.createElement('a');
 	link.href = url;
 	if (filename) link.download = filename;
@@ -79,4 +85,27 @@ export function downloadUrl(url: string, filename?: string) {
 	document.body.appendChild(link);
 	link.click();
 	link.remove();
+}
+
+async function saveDownload(url: string, filename?: string) {
+	const response = await fetch(url);
+	if (!response.ok) throw await parseError(response);
+	const disposition = response.headers.get('content-disposition') ?? '';
+	const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+	const quoted = /filename="([^"]+)"/i.exec(disposition)?.[1];
+	const name = filename ?? (encoded ? decodeURIComponent(encoded) : quoted) ?? 'download';
+	const { save } = await import('@tauri-apps/plugin-dialog');
+	const { writeFile } = await import('@tauri-apps/plugin-fs');
+	const target = await save({ defaultPath: name, title: 'Save file' });
+	if (!target) {
+		await response.body?.cancel();
+		return;
+	}
+	await writeFile(target, new Uint8Array(await response.arrayBuffer()));
+	toast.success(`Saved ${name}`);
+}
+
+export function openDocumentUrl(url: string, filename?: string) {
+	if (desktop) downloadUrl(url, filename);
+	else window.open(url, '_blank', 'noopener');
 }

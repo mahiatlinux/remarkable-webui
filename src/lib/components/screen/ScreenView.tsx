@@ -1,3 +1,4 @@
+import { websocketUrl } from '$lib/desktop';
 import { useEffect, useRef, useState } from 'react';
 import fixWebmDuration from 'fix-webm-duration';
 import type { ScreenError, ScreenMeta } from '$shared/types';
@@ -7,11 +8,6 @@ import { downloadUrl } from '$lib/apis/client';
 import Icon from '../Icon';
 import PageHeader, { EmptyState, ToolButton } from '../common/PageHeader';
 import Spinner from '../common/Spinner';
-
-function wsUrl(path: string): string {
-	const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-	return `${protocol}://${location.host}${path}`;
-}
 
 const RECORDING_TYPES = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
 
@@ -120,7 +116,7 @@ export default function ScreenView() {
 		if (!deviceId) return;
 		setError(null);
 		setMeta(null);
-		const socket = new WebSocket(wsUrl(`/ws/screen?device=${deviceId}`));
+		const socket = new WebSocket(websocketUrl(`/ws/screen?device=${deviceId}`));
 		socket.binaryType = 'arraybuffer';
 		let current: ScreenMeta | null = null;
 		let updates = 0;

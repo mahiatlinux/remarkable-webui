@@ -1,0 +1,19 @@
+{
+	"app": {
+		"windows": [
+			{
+				"label": "main",
+				"title": "reMarkable WebUI",
+				"width": 1180,
+				"height": 800,
+				"minWidth": 640,
+				"minHeight": 480,
+				"decorations": true,
+				"titleBarStyle": "Overlay",
+				"hiddenTitle": true,
+				"dragDropEnabled": false,
+				"backgroundColor": "#111214"
+			}
+		]
+	}
+}

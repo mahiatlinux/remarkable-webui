@@ -83,13 +83,14 @@ export default function ItemCard({
 		onClick: onselect,
 		onDoubleClick: onopen,
 		onContextMenu: oncontextmenu,
-		'data-item-id': item.id
+		'data-item-id': item.id,
+		'data-selected': selected
 	};
 
 	if (view === 'list') {
 		return (
 			<div
-				className={`group grid grid-cols-[minmax(0,1fr)_5rem_4rem_6rem_5rem] items-center gap-3 h-8 px-2 rounded-xl text-xs cursor-default select-none ${selectedClass} ${dropClass}`}
+				className={`library-row group grid grid-cols-[minmax(0,1fr)_5rem_4rem_6rem_5rem] items-center gap-3 h-10 px-3 rounded-xl text-xs cursor-default select-none ${selectedClass} ${dropClass}`}
 				{...itemProps}
 			>
 				<span className="flex items-center gap-2 min-w-0">
@@ -110,7 +111,7 @@ export default function ItemCard({
 	if (isFolder) {
 		return (
 			<div
-				className={`group flex items-center gap-2.5 px-2 py-1.5 rounded-xl cursor-default select-none transition-colors duration-75 ${selectedClass} ${dropClass}`}
+				className={`library-card library-folder group flex items-center gap-3 cursor-default select-none ${dropClass}`}
 				{...itemProps}
 			>
 				<FolderGlyph />
@@ -129,7 +130,7 @@ export default function ItemCard({
 
 	return (
 		<div
-			className={`group flex flex-col gap-1.5 p-2 rounded-xl border cursor-default select-none transition-colors duration-75 ${selectedClass} ${dropClass}`}
+			className={`library-card library-document group flex flex-col gap-1.5 cursor-default select-none ${dropClass}`}
 			{...itemProps}
 		>
 			<div

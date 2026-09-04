@@ -10,7 +10,7 @@
 
 # Stack
 
-React 19 + Vite + Tailwind CSS v4 + TypeScript. SPA (react-router-dom). Node backend in `server/` (Express 5 + ws + ssh2) owns the SSH sessions to the tablet; Vite proxies `/api` and `/ws` to it on port 8787. Types shared by both sides live in `shared/types.ts` (`$shared` alias). Shared client state via the writable/useStore layer in `src/lib/store.ts` (subscribe outside components, `useStore` inside; always set Map/Set/object stores with new instances). Toasts via sonner. Tooltips via `tooltip()` ref callbacks from `$lib/tooltip`. Terminal via @xterm/xterm. PDF page backgrounds via pdfjs-dist. reMarkable `.rm` v6 parsing and SVG rendering in `src/lib/rm`. Path alias: `$lib` → `src/lib`.
+React 19 + Vite + Tailwind CSS v4 + TypeScript. SPA (react-router-dom). Node backend in `server/` (Express 5 + ws + ssh2) owns the SSH sessions to the tablet; Vite proxies `/api` and `/ws` to it on port 8787. Tauri 2 in `src-tauri/` bundles the backend with Node and uses an authenticated random loopback port; build backend URLs through `src/lib/desktop.ts`. Fonts are local and load before React mounts. Types shared by both sides live in `shared/types.ts` (`$shared` alias). Shared client state via the writable/useStore layer in `src/lib/store.ts` (subscribe outside components, `useStore` inside; always set Map/Set/object stores with new instances). Toasts via sonner. Tooltips via `tooltip()` ref callbacks from `$lib/tooltip`. Terminal via @xterm/xterm. PDF page backgrounds via pdfjs-dist. reMarkable `.rm` v6 parsing and SVG rendering in `src/lib/rm`. Path alias: `$lib` → `src/lib`.
 
 # Writing so it does not read as AI
 

@@ -1,6 +1,8 @@
 import { useStore } from '$lib/store';
 import { appVersion } from '$lib/stores';
 import Icon from '../Icon';
+import { openExternal } from '$lib/desktop';
+import { toast } from 'sonner';
 
 const REPO_URL = 'https://github.com/mahiatlinux/remarkable-webui';
 
@@ -27,6 +29,10 @@ export default function About() {
 			</p>
 			<a
 				href={REPO_URL}
+				onClick={(event) => {
+					event.preventDefault();
+					void openExternal(REPO_URL).catch((error: Error) => toast.error(error.message));
+				}}
 				target="_blank"
 				rel="noopener"
 				className="app-button-ghost inline-flex items-center gap-1.5 h-7 px-3 mt-3 rounded-full border text-xs self-start"
