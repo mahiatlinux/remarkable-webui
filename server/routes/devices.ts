@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { USB_HOST, addDevice, probeTcp, removeDevice, updateDevice } from '../devices';
 import { emit, subscribe } from '../events';
 import { allStates, dropSession, getSession } from '../session';
+import { setupWifi } from '../wifi';
 
 export const router = Router();
 
@@ -35,6 +36,10 @@ router.post('/devices/:id/connect', async (req, res) => {
 	const session = getSession(req.params.id);
 	await session.connect();
 	res.json(session.state());
+});
+
+router.post('/devices/:id/wifi', async (req, res) => {
+	res.json(await setupWifi(getSession(req.params.id)));
 });
 
 router.post('/devices/:id/disconnect', (req, res) => {

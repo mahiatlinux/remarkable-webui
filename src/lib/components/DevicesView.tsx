@@ -10,6 +10,7 @@ import {
 	deleteDevice,
 	disconnectDevice,
 	probeUsb,
+	setupWifi,
 	updateDevice
 } from '$lib/apis/devices';
 import Icon from './Icon';
@@ -73,6 +74,7 @@ export default function DevicesView() {
 	const active = useStore(activeDeviceId);
 	const [draft, setDraft] = useState<Draft | null>(null);
 	const [saving, setSaving] = useState(false);
+	const [wifiSetup, setWifiSetup] = useState<string | null>(null);
 	const [usb, setUsb] = useState<boolean | null>(null);
 	const [removing, setRemoving] = useState<DeviceState | null>(null);
 
@@ -115,21 +117,34 @@ export default function DevicesView() {
 	}
 
 	async function use(device: DeviceState) {
-		activeDeviceId.set(device.id);
 		try {
 			await connectDevice(device.id);
+			activeDeviceId.set(device.id);
 			navigate('/library');
 		} catch (error) {
 			toast.error((error as Error).message);
 		}
 	}
 
-	async function toggleConnection(device: DeviceState) {
+	async function disconnect(device: DeviceState) {
 		try {
-			if (device.status === 'connected') await disconnectDevice(device.id);
-			else await connectDevice(device.id);
+			await disconnectDevice(device.id);
 		} catch (error) {
 			toast.error((error as Error).message);
+		}
+	}
+
+	async function configureWifi(device: DeviceState) {
+		setWifiSetup(device.id);
+		try {
+			const wifi = await setupWifi(device.id);
+			activeDeviceId.set(wifi.id);
+			toast.success(`Connected over Wi-Fi at ${wifi.host}. You can unplug the USB cable.`);
+			navigate('/library');
+		} catch (error) {
+			toast.error((error as Error).message);
+		} finally {
+			setWifiSetup(null);
 		}
 	}
 
@@ -171,20 +186,19 @@ export default function DevicesView() {
 						</p>
 					</div>
 					{list.length > 0 && (
-						<section>
-							<h2 className="text-xs text-gray-400 dark:text-gray-600 mb-2">Saved devices</h2>
+						<section aria-label="Saved devices">
 							<div className="flex flex-col gap-1">
 								{list.map((device) => (
 									<div
 										key={device.id}
-										className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border ${
+										className={`flex flex-wrap items-center gap-3 px-3.5 py-2.5 rounded-2xl border ${
 											device.id === active
 												? 'border-gray-300 dark:border-white/15 bg-gray-50 dark:bg-white/3'
 												: 'border-gray-200 dark:border-white/6'
 										}`}
 									>
 										<span className={`status-dot ${device.status}`}></span>
-										<div className="flex-1 min-w-0">
+										<div className="flex-1 min-w-0 basis-48">
 											<div className="text-xs font-medium text-gray-900 dark:text-white truncate">
 												{device.name}
 												{device.model && (
@@ -200,33 +214,60 @@ export default function DevicesView() {
 												)}
 											</div>
 										</div>
-										{device.status === 'connecting' && <Spinner size={12} />}
-										<button
-											className="app-button-ghost h-7 px-2 rounded-full text-xs"
-											onClick={() => toggleConnection(device)}
-										>
-											{device.status === 'connected' ? 'Disconnect' : 'Connect'}
-										</button>
-										<button
-											className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-full"
-											onClick={() => edit(device)}
-											aria-label="Edit"
-										>
-											<Icon name="pencil" size={13} />
-										</button>
-										<button
-											className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-full"
-											onClick={() => setRemoving(device)}
-											aria-label="Remove"
-										>
-											<Icon name="trash" size={13} />
-										</button>
-										<button
-											className="app-button h-7 px-3 rounded-full text-xs font-extrabold"
-											onClick={() => use(device)}
-										>
-											Open
-										</button>
+										<div className="flex flex-wrap items-center gap-1 ml-auto">
+											{device.status === 'connecting' && <Spinner size={12} />}
+											{device.host === USB_HOST && (
+												<button
+													className="app-button-ghost flex items-center gap-1.5 h-7 px-2 rounded-full text-xs"
+													onClick={() => configureWifi(device)}
+													title="Connect by USB and join the same Wi-Fi network as this computer."
+													disabled={wifiSetup !== null || device.status === 'connecting' || saving}
+												>
+													{wifiSetup === device.id ? (
+														<Spinner size={12} />
+													) : (
+														<Icon name="wifi" size={13} />
+													)}
+													{wifiSetup === device.id ? 'Setting up Wi-Fi…' : 'Set up Wi-Fi'}
+												</button>
+											)}
+											{device.status === 'connected' && (
+												<button
+													className="app-button-ghost h-7 px-2 rounded-full text-xs"
+													onClick={() => disconnect(device)}
+													disabled={wifiSetup !== null}
+												>
+													Disconnect
+												</button>
+											)}
+											<button
+												className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-full"
+												onClick={() => edit(device)}
+												aria-label="Edit"
+												disabled={wifiSetup !== null}
+											>
+												<Icon name="pencil" size={13} />
+											</button>
+											<button
+												className="app-button-ghost flex items-center justify-center w-7 h-7 rounded-full"
+												onClick={() => setRemoving(device)}
+												aria-label="Remove"
+												disabled={wifiSetup !== null}
+											>
+												<Icon name="trash" size={13} />
+											</button>
+											<button
+												className="app-button h-7 px-3 rounded-full text-xs font-extrabold"
+												onClick={() => use(device)}
+												disabled={wifiSetup !== null || device.status === 'connecting' || saving}
+											>
+												{device.status === 'connected'
+													? 'Open'
+													: device.status === 'connecting'
+														? 'Connecting…'
+														: 'Connect'}
+											</button>
+										</div>
 									</div>
 								))}
 							</div>
@@ -263,8 +304,8 @@ export default function DevicesView() {
 											</>
 										}
 									>
-										The tablet always answers at {USB_HOST} over the cable. Wifi works too with the
-										address from Settings › Wi-Fi.
+										The tablet answers at {USB_HOST} over the cable. After saving your device,
+										choose Set up Wi-Fi to connect wirelessly with the same login.
 									</Step>
 									<Step number={2} title="Make sure SSH is on">
 										reMarkable 1 and 2 have it on out of the box. Paper Pro and newer need Settings
@@ -350,7 +391,7 @@ export default function DevicesView() {
 								<button
 									type="submit"
 									className="app-button h-8 px-4 rounded-full text-xs font-extrabold"
-									disabled={saving || !draft.host.trim()}
+									disabled={saving || wifiSetup !== null || !draft.host.trim()}
 								>
 									{saving ? 'Connecting…' : draft.id ? 'Save and connect' : 'Add and connect'}
 								</button>

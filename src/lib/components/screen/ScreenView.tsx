@@ -4,7 +4,8 @@ import fixWebmDuration from 'fix-webm-duration';
 import type { ScreenError, ScreenMeta } from '$shared/types';
 import { useStore } from '$lib/store';
 import { activeDeviceId } from '$lib/stores';
-import { downloadUrl } from '$lib/apis/client';
+import { downloadBlob } from '$lib/apis/client';
+import { toast } from 'sonner';
 import Icon from '../Icon';
 import PageHeader, { EmptyState, ToolButton } from '../common/PageHeader';
 import Spinner from '../common/Spinner';
@@ -186,9 +187,7 @@ export default function ScreenView() {
 	}
 
 	function saveBlob(blob: Blob, extension: string) {
-		const url = URL.createObjectURL(blob);
-		downloadUrl(url, `remarkable-${timestamp()}.${extension}`);
-		URL.revokeObjectURL(url);
+		void downloadBlob(blob, `remarkable-${timestamp()}.${extension}`);
 	}
 
 	function snapshot() {
@@ -201,7 +200,10 @@ export default function ScreenView() {
 
 	function startRecording() {
 		const source = canvas.current;
-		const mimeType = RECORDING_TYPES.find((type) => MediaRecorder.isTypeSupported(type));
+		const mimeType =
+			typeof MediaRecorder !== 'undefined'
+				? RECORDING_TYPES.find((type) => MediaRecorder.isTypeSupported(type))
+				: undefined;
 		if (!source || !mimeType) {
 			setError('This browser cannot record video');
 			return;
@@ -209,7 +211,8 @@ export default function ScreenView() {
 		const frame = document.createElement('canvas');
 		const startRotation = rotation;
 		renderFrame(source, frame, startRotation, invertRef.current);
-		const media = new MediaRecorder(frame.captureStream(60), {
+		const stream = frame.captureStream(60);
+		const media = new MediaRecorder(stream, {
 			mimeType,
 			videoBitsPerSecond: 8_000_000
 		});
@@ -217,13 +220,14 @@ export default function ScreenView() {
 		const startedAt = Date.now();
 		media.ondataavailable = (event) => event.data.size && chunks.push(event.data);
 		media.onstop = () => {
-			frame
-				.captureStream()
-				.getTracks()
-				.forEach((track) => track.stop());
+			stream.getTracks().forEach((track) => track.stop());
 			fixWebmDuration(new Blob(chunks, { type: mimeType }), Date.now() - startedAt, {
 				logger: false
-			}).then((blob) => saveBlob(blob, 'webm'));
+			})
+				.then((blob) => saveBlob(blob, 'webm'))
+				.catch((error: unknown) =>
+					toast.error(error instanceof Error ? error.message : String(error))
+				);
 		};
 		const draw = () => {
 			if (canvas.current) renderFrame(canvas.current, frame, startRotation, invertRef.current);

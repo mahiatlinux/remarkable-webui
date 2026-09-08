@@ -2,6 +2,7 @@
 
 use serde::Serialize;
 use std::{
+    fs::{create_dir_all, File},
     io::{BufRead, BufReader},
     process::{Child, Command, Stdio},
     sync::{mpsc, Mutex},
@@ -56,9 +57,16 @@ fn start_backend(app: &tauri::AppHandle) -> Result<Connection, String> {
             "remarkable-node"
         });
     let token = uuid::Uuid::new_v4().to_string();
+    let script = resources.join("resources/server/index.mjs");
+    let log_dir = app.path().app_log_dir().map_err(|e| e.to_string())?;
+    create_dir_all(&log_dir)
+        .map_err(|e| format!("Could not create the service log directory: {e}"))?;
+    let log_path = log_dir.join("tablet-service.log");
+    let log =
+        File::create(&log_path).map_err(|e| format!("Could not create the service log: {e}"))?;
     let mut command = Command::new(executable);
     command
-        .arg(resources.join("resources/server/index.mjs"))
+        .arg(dunce::simplified(&script))
         .env("PORT", "0")
         .env("NODE_ENV", "production")
         .env("RM_DESKTOP_TOKEN", &token)
@@ -67,7 +75,7 @@ fn start_backend(app: &tauri::AppHandle) -> Result<Connection, String> {
         .env_remove("RM_DESKTOP_ORIGIN")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::inherit());
+        .stderr(Stdio::from(log));
     if cfg!(debug_assertions) {
         command.env("RM_DESKTOP_ORIGIN", "http://localhost:5173");
     }
@@ -107,7 +115,12 @@ fn start_backend(app: &tauri::AppHandle) -> Result<Connection, String> {
     });
     let port = receiver
         .recv_timeout(Duration::from_secs(15))
-        .map_err(|_| "The tablet service did not start. Close the app and try again.")?;
+        .map_err(|_| {
+            format!(
+                "The tablet service did not start. Details: {}",
+                log_path.display()
+            )
+        })?;
     running.connection.url = format!("http://127.0.0.1:{port}");
     let connection = running.connection.clone();
     *backend = Some(running);

@@ -73,11 +73,7 @@ export async function uploadFiles(
 	});
 }
 
-export function downloadUrl(url: string, filename?: string) {
-	if (desktop) {
-		void saveDownload(url, filename).catch((error: Error) => toast.error(error.message));
-		return;
-	}
+function browserDownload(url: string, filename?: string) {
 	const link = document.createElement('a');
 	link.href = url;
 	if (filename) link.download = filename;
@@ -87,21 +83,79 @@ export function downloadUrl(url: string, filename?: string) {
 	link.remove();
 }
 
-async function saveDownload(url: string, filename?: string) {
-	const response = await fetch(url);
-	if (!response.ok) throw await parseError(response);
-	const disposition = response.headers.get('content-disposition') ?? '';
-	const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
-	const quoted = /filename="([^"]+)"/i.exec(disposition)?.[1];
-	const name = filename ?? (encoded ? decodeURIComponent(encoded) : quoted) ?? 'download';
+function safeFilename(name: string): string {
+	const cleaned =
+		name
+			.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+			.trim()
+			.replace(/[. ]+$/, '') || 'download';
+	return /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(cleaned) ? `_${cleaned}` : cleaned;
+}
+
+function downloadError(error: unknown) {
+	toast.error(error instanceof Error ? error.message : String(error));
+}
+
+export async function downloadUrl(url: string, filename?: string): Promise<void> {
+	if (!desktop) {
+		browserDownload(url, filename ? safeFilename(filename) : undefined);
+		return;
+	}
+	try {
+		let response: Response;
+		try {
+			response = await fetch(apiUrl(url));
+		} catch {
+			throw new Error('Could not download the file. Check the tablet connection and try again.');
+		}
+		if (!response.ok) throw await parseError(response);
+		const disposition = response.headers.get('content-disposition') ?? '';
+		const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+		const quoted = /filename="([^"]+)"/i.exec(disposition)?.[1];
+		let name = filename ?? quoted ?? 'download';
+		if (!filename && encoded) {
+			try {
+				name = decodeURIComponent(encoded);
+			} catch {
+				name = quoted ?? 'download';
+			}
+		}
+		let blob: Blob;
+		try {
+			blob = await response.blob();
+		} catch {
+			throw new Error('The download was interrupted. Keep the tablet connected and try again.');
+		}
+		await saveNativeFile(blob, safeFilename(name));
+	} catch (error) {
+		downloadError(error);
+	}
+}
+
+export async function downloadBlob(blob: Blob, filename: string): Promise<void> {
+	const name = safeFilename(filename);
+	if (desktop) {
+		try {
+			await saveNativeFile(blob, name);
+		} catch (error) {
+			downloadError(error);
+		}
+		return;
+	}
+	const url = URL.createObjectURL(blob);
+	try {
+		browserDownload(url, name);
+	} finally {
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	}
+}
+
+async function saveNativeFile(blob: Blob, name: string) {
 	const { save } = await import('@tauri-apps/plugin-dialog');
 	const { writeFile } = await import('@tauri-apps/plugin-fs');
 	const target = await save({ defaultPath: name, title: 'Save file' });
-	if (!target) {
-		await response.body?.cancel();
-		return;
-	}
-	await writeFile(target, new Uint8Array(await response.arrayBuffer()));
+	if (!target) return;
+	await writeFile(target, new Uint8Array(await blob.arrayBuffer()));
 	toast.success(`Saved ${name}`);
 }
 

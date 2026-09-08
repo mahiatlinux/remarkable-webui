@@ -31,7 +31,9 @@ export default function About() {
 				href={REPO_URL}
 				onClick={(event) => {
 					event.preventDefault();
-					void openExternal(REPO_URL).catch((error: Error) => toast.error(error.message));
+					void openExternal(REPO_URL).catch((error: unknown) =>
+						toast.error(error instanceof Error ? error.message : String(error))
+					);
 				}}
 				target="_blank"
 				rel="noopener"

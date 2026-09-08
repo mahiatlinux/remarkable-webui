@@ -62,6 +62,7 @@ async function mockTablet(page: Page, connected = true, theme: 'light' | 'dark' 
 						: {};
 		await route.fulfill({ json: data });
 	});
+	return device;
 }
 
 test('toolbar sidebar toggle persists and returns keyboard focus safely', async ({ page }) => {
@@ -174,4 +175,141 @@ test('first screen waits for fonts on a cold load', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: 'Connect your reMarkable' })).toBeVisible();
 	expect(await page.evaluate(() => document.fonts.check('550 14px "Manrope Variable"'))).toBe(true);
 	expect(await page.evaluate(() => document.fonts.status)).toBe('loaded');
+});
+
+test('Wi-Fi setup uses saved credentials, shows progress and opens the wireless library', async ({
+	page
+}) => {
+	const device = await mockTablet(page);
+	const wifi = { ...device, id: 'tablet-wifi', name: 'Paper Pro (Wi-Fi)', host: '192.168.4.20' };
+	let releaseSetup!: () => void;
+	const pending = new Promise<void>((resolve) => {
+		releaseSetup = resolve;
+	});
+	await page.route('**/api/devices/tablet/wifi', async (route) => {
+		expect(route.request().method()).toBe('POST');
+		expect(route.request().postData()).toBeNull();
+		await pending;
+		await route.fulfill({ json: wifi });
+	});
+	await page.goto('/devices');
+	await expect(page.getByRole('button', { name: 'Set up Wi-Fi', exact: true })).toHaveCount(1);
+	await page.screenshot({ path: 'test-results/wifi-setup-light.png' });
+	await page.getByRole('button', { name: 'Set up Wi-Fi', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Setting up Wi-Fi…' })).toBeDisabled();
+	await expect(page.getByRole('button', { name: 'Open', exact: true })).toBeDisabled();
+	releaseSetup();
+	await expect(page).toHaveURL('/library');
+	await expect(page.locator('.library-card')).toHaveCount(8);
+	await expect(
+		page.getByText('Connected over Wi-Fi at 192.168.4.20. You can unplug the USB cable.')
+	).toBeVisible();
+	expect(await page.evaluate(() => JSON.parse(localStorage.getItem('rm_active_device')!))).toBe(
+		'tablet-wifi'
+	);
+});
+
+test('failed Wi-Fi setup keeps the current device and can be retried in a narrow window', async ({
+	page
+}) => {
+	await mockTablet(page, true, 'dark');
+	await page.route('**/api/devices/tablet/wifi', async (route) => {
+		await route.fulfill({
+			status: 400,
+			json: {
+				error:
+					'Connect the tablet to the same Wi-Fi network as this computer, then try Set up Wi-Fi again.'
+			}
+		});
+	});
+	await page.setViewportSize({ width: 680, height: 640 });
+	await page.goto('/devices');
+	await page.getByRole('button', { name: 'Hide sidebar', exact: true }).click();
+	const setup = page.getByRole('button', { name: 'Set up Wi-Fi', exact: true });
+	await setup.click();
+	await expect(
+		page.getByText(
+			'Connect the tablet to the same Wi-Fi network as this computer, then try Set up Wi-Fi again.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	await expect(setup).toBeEnabled();
+	await expect(page).toHaveURL('/devices');
+	await expect(page.getByRole('button', { name: 'Open', exact: true })).toBeEnabled();
+	expect(await page.evaluate(() => JSON.parse(localStorage.getItem('rm_active_device')!))).toBe(
+		'tablet'
+	);
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+		true
+	);
+	await page.screenshot({ path: 'test-results/wifi-setup-dark-narrow.png' });
+});
+
+test('saved USB and Wi-Fi connections have no repeated setup or connect actions', async ({
+	page
+}) => {
+	const usb = { ...(await mockTablet(page, false)), status: 'disconnected' };
+	const wifi = {
+		...usb,
+		id: 'tablet-wifi',
+		name: 'Wireless tablet',
+		host: '192.168.4.20',
+		status: 'connected'
+	};
+	await page.route('**/api/devices', (route) => route.fulfill({ json: [usb, wifi] }));
+	let connections = 0;
+	await page.route('**/api/devices/tablet/connect', (route) => {
+		connections++;
+		usb.status = 'connected';
+		return route.fulfill({ json: usb });
+	});
+	await page.route('**/api/devices/tablet/disconnect', (route) => {
+		usb.status = 'disconnected';
+		return route.fulfill({ json: usb });
+	});
+	await page.goto('/devices');
+	const saved = page.getByRole('region', { name: 'Saved devices' });
+	await expect(saved.getByRole('button', { name: 'Set up Wi-Fi', exact: true })).toHaveCount(1);
+	await expect(saved.getByRole('button', { name: 'Connect', exact: true })).toHaveCount(1);
+	await expect(saved.getByRole('button', { name: 'Open', exact: true })).toHaveCount(1);
+	await expect(saved.getByRole('button', { name: 'Disconnect', exact: true })).toHaveCount(1);
+	await page.screenshot({ path: 'test-results/wifi-actions-light.png' });
+	await saved.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(page).toHaveURL('/library');
+	await expect(page.locator('.library-card')).toHaveCount(8);
+	expect(connections).toBe(1);
+	await page.goto('/devices');
+	await expect(saved.getByRole('button', { name: 'Connect', exact: true })).toHaveCount(0);
+	await expect(saved.getByRole('button', { name: 'Open', exact: true })).toHaveCount(2);
+	await expect(saved.getByRole('button', { name: 'Set up Wi-Fi', exact: true })).toHaveCount(1);
+	await saved.getByRole('button', { name: 'Disconnect', exact: true }).first().click();
+	await expect(saved.getByRole('button', { name: 'Connect', exact: true })).toHaveCount(1);
+	expect(
+		await page.evaluate(() => JSON.parse(localStorage.getItem('rm_active_device')!))
+	).toBeNull();
+	expect(connections).toBe(1);
+});
+
+test('disconnecting from the sidebar also stops automatic reconnection', async ({ page }) => {
+	const device = await mockTablet(page);
+	let connections = 0;
+	await page.route('**/api/devices', (route) => route.fulfill({ json: [device] }));
+	await page.route('**/api/devices/tablet/disconnect', (route) => {
+		device.status = 'disconnected';
+		return route.fulfill({ json: device });
+	});
+	await page.route('**/api/devices/tablet/connect', (route) => {
+		connections++;
+		device.status = 'connected';
+		return route.fulfill({ json: device });
+	});
+	await page.goto('/library');
+	await page
+		.locator('#app-sidebar')
+		.getByRole('button', { name: device.model, exact: true })
+		.click();
+	await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Connect', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'No device', exact: true })).toBeVisible();
+	expect(connections).toBe(0);
 });

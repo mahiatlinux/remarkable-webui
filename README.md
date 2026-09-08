@@ -25,7 +25,9 @@ Desktop packages use Tauri 2 and include the Node.js backend. The toolbar has a 
 
 Needs Node.js 22 or newer and SSH on the tablet. reMarkable 1 and 2 have it on by default. Paper Pro needs developer mode under Settings › General › Software › Advanced, and turning it on factory resets the tablet. The root password is at the bottom of Settings › General › Help › Copyrights and licenses.
 
-Over USB the tablet answers on `10.11.99.1`. Over wifi use the address from Settings › Wi-Fi. Uploads and PDF export need "USB web interface" enabled under Settings › Storage.
+Over USB the tablet answers on `10.11.99.1`. To set up Wi-Fi, save and connect your tablet over USB, join the same Wi-Fi network as your computer, then open Devices and click **Set up Wi-Fi**. The app discovers the wireless address, enables Wi-Fi SSH through the tablet's built-in helper when needed, and tests the saved password or SSH key against the same tablet before saving a Wi-Fi connection. Your USB connection stays available. Once the library opens over Wi-Fi, you can unplug the cable.
+
+Keep the tablet awake while using Wi-Fi. **Set up Wi-Fi** appears on USB connections only and reuses a matching saved Wi-Fi connection. If your router changes its address, reconnect by USB and run setup on the original USB connection again; its Wi-Fi profile is updated instead of duplicated. You can also enter a Wi-Fi address manually in the Host field. Uploads and PDF export still need "USB web interface" enabled under Settings › Storage.
 
 ```sh
 npm install
@@ -62,6 +64,8 @@ npm run test:ui
 npm run desktop:prepare
 node tools/smoke-sidecar.mjs
 ```
+
+After building on Windows, run `node tools/smoke-desktop.mjs` to launch the actual app with temporary settings and verify service startup, authenticated requests and shutdown. Pass an executable path to check an installed copy. Startup errors are written to `tablet-service.log` in the app's log directory; the error screen shows the path.
 
 Tests use temporary device storage and a local SSH test server. Browser tests mock the tablet API. The HTTP handlers are grouped under `server/routes/`; `server/app.ts` creates the API independently of process startup. Library selection, menus and dialogs live in separate modules. Route components load on demand.
 

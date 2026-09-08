@@ -8,6 +8,7 @@ import { HttpError } from './http';
 
 export interface StoredDevice extends DeviceInput {
 	id: string;
+	wifiSourceId?: string;
 }
 
 const configDir = process.env.RM_CONFIG_DIR ?? path.join(homedir(), '.config', 'remarkable-webui');
@@ -31,7 +32,7 @@ function save() {
 }
 
 export function toPublic(device: StoredDevice): Device {
-	const { password, ...rest } = device;
+	const { password, wifiSourceId, ...rest } = device;
 	return { ...rest, hasPassword: Boolean(password) };
 }
 
@@ -72,8 +73,31 @@ export function addDevice(input: Partial<DeviceInput>): StoredDevice {
 
 export function updateDevice(id: string, input: Partial<DeviceInput>): StoredDevice {
 	const existing = getDevice(id);
-	const device = { id, ...normalize(input, existing) };
+	const device = { ...existing, ...normalize(input, existing) };
 	devices = devices.map((entry) => (entry.id === id ? device : entry));
+	save();
+	return device;
+}
+
+export function saveWifiDevice(sourceId: string, host: string): StoredDevice {
+	const source = getDevice(sourceId);
+	if (source.host !== USB_HOST) return updateDevice(sourceId, { host });
+	const existing =
+		devices.find((device) => device.wifiSourceId === sourceId) ??
+		devices.find(
+			(device) =>
+				device.host === host && device.port === source.port && device.username === source.username
+		);
+	const device: StoredDevice = {
+		...source,
+		id: existing?.id ?? randomUUID(),
+		name: existing?.name ?? `${source.name.replace(/\s+\(USB\)$/i, '')} (Wi-Fi)`,
+		host,
+		wifiSourceId: sourceId
+	};
+	devices = existing
+		? devices.map((entry) => (entry.id === existing.id ? device : entry))
+		: [...devices, device];
 	save();
 	return device;
 }

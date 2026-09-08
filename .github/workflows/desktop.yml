@@ -12,6 +12,7 @@ on:
       - 'vite.config.ts'
       - 'tools/prepare-desktop.mjs'
       - 'tools/smoke-sidecar.mjs'
+      - 'tools/smoke-desktop.mjs'
       - 'tools/licenses.mjs'
       - 'package*.json'
       - '.github/workflows/desktop.yml'
@@ -66,6 +67,9 @@ jobs:
         run: npm run desktop:build -- --bundles ${{ matrix.bundles }}
       - name: Check bundled backend
         run: node tools/smoke-sidecar.mjs
+      - name: Check Windows app startup
+        if: runner.os == 'Windows'
+        run: node tools/smoke-desktop.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.name }}

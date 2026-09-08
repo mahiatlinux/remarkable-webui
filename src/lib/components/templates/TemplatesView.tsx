@@ -11,7 +11,7 @@ import {
 	templateSourceUrl,
 	updateTemplate
 } from '$lib/apis/system';
-import { downloadUrl } from '$lib/apis/client';
+import { downloadBlob, downloadUrl } from '$lib/apis/client';
 import { templateSvg } from '$lib/templates/render';
 import DropdownMenu from '../DropdownMenu';
 import Icon from '../Icon';
@@ -31,20 +31,22 @@ function isCustom(template: TemplateInfo): template is CustomTemplate {
 }
 
 async function downloadSvg(template: TemplateInfo) {
-	if (template.file === 'template') {
-		const doc = await getTemplateDocument(templateSourceUrl(template));
-		const [width, height] = paperFor(template);
-		const blob = new Blob([templateSvg(doc, width, height)], { type: 'image/svg+xml' });
-		const url = URL.createObjectURL(blob);
-		downloadUrl(url, `${template.name}.svg`);
-		URL.revokeObjectURL(url);
-		return;
-	}
-	if (template.file) {
-		downloadUrl(
-			templateFileUrl(template.filename, template.file),
-			`${template.filename}.${template.file}`
-		);
+	try {
+		if (template.file === 'template') {
+			const doc = await getTemplateDocument(templateSourceUrl(template));
+			const [width, height] = paperFor(template);
+			const blob = new Blob([templateSvg(doc, width, height)], { type: 'image/svg+xml' });
+			await downloadBlob(blob, `${template.name}.svg`);
+			return;
+		}
+		if (template.file) {
+			await downloadUrl(
+				templateFileUrl(template.filename, template.file),
+				`${template.filename}.${template.file}`
+			);
+		}
+	} catch (error) {
+		toast.error(error instanceof Error ? error.message : String(error));
 	}
 }
 

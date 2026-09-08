@@ -5,7 +5,7 @@ import type { DocumentDetail } from '$shared/types';
 import { useStore } from '$lib/store';
 import { library } from '$lib/stores';
 import { documentFileUrl, exportUrl, getDocument, thumbnailUrl } from '$lib/apis/library';
-import { downloadUrl, openDocumentUrl } from '$lib/apis/client';
+import { downloadBlob, downloadUrl, openDocumentUrl } from '$lib/apis/client';
 import type { Rendered } from '$lib/rm';
 import DropdownMenu from '../DropdownMenu';
 import Icon from '../Icon';
@@ -129,9 +129,7 @@ export default function DocumentView() {
 	function downloadSvg() {
 		if (!rendered || !detail) return;
 		const blob = new Blob([rendered.svg], { type: 'image/svg+xml' });
-		const url = URL.createObjectURL(blob);
-		downloadUrl(url, `${name} - page ${index + 1}.svg`);
-		URL.revokeObjectURL(url);
+		void downloadBlob(blob, `${name} - page ${index + 1}.svg`);
 	}
 
 	if (error) {

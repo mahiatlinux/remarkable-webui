@@ -1,5 +1,5 @@
 import type { DeviceInput, DeviceState, UsbProbe } from '$shared/types';
-import { devices, devicesLoaded } from '$lib/stores';
+import { activeDeviceId, devices, devicesLoaded } from '$lib/stores';
 import { json, request } from './client';
 
 export async function refreshDevices(): Promise<DeviceState[]> {
@@ -46,7 +46,14 @@ export async function connectDevice(id: string): Promise<DeviceState> {
 }
 
 export async function disconnectDevice(id: string): Promise<DeviceState> {
+	if (activeDeviceId.get() === id) activeDeviceId.set(null);
 	const state = await json<DeviceState>(`/api/devices/${id}/disconnect`, 'POST');
+	upsertDeviceState(state);
+	return state;
+}
+
+export async function setupWifi(id: string): Promise<DeviceState> {
+	const state = await json<DeviceState>(`/api/devices/${id}/wifi`, 'POST');
 	upsertDeviceState(state);
 	return state;
 }

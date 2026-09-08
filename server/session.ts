@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Client, type ClientChannel, type SFTPWrapper } from 'ssh2';
+import { Client, type ClientChannel, type ConnectConfig, type SFTPWrapper } from 'ssh2';
 import type { DeviceState, SessionStatus } from '../shared/types';
 import { getDevice, listDevices, toPublic, type StoredDevice } from './devices';
 import { emit } from './events';
@@ -26,6 +26,7 @@ export class Session {
 	firmware?: string;
 	pendingRestart = false;
 	private client: Client | null = null;
+	private hostKey?: string;
 	private sftpWrapper: SFTPWrapper | null = null;
 	private connecting: Promise<void> | null = null;
 	private restartTimer: NodeJS.Timeout | null = null;
@@ -101,16 +102,46 @@ export class Session {
 				fail('Connection closed');
 			});
 			client.connect({
-				host: device.host,
-				port: device.port,
-				username: device.username,
-				password: device.password,
-				privateKey: device.keyPath ? readKey(device.keyPath) : undefined,
-				readyTimeout: 10000,
-				keepaliveInterval: 15000,
-				keepaliveCountMax: 3
+				...sshConfig(device),
+				hostHash: 'sha256',
+				hostVerifier: (key: string) => {
+					this.hostKey = key;
+					return true;
+				}
 			});
 		});
+	}
+
+	async verifyAddress(host: string): Promise<void> {
+		await this.ready();
+		const device = { ...this.device, host };
+		const hostKey = this.hostKey;
+		const client = new Client();
+		try {
+			await new Promise<void>((resolve, reject) => {
+				client.once('ready', resolve);
+				client.once('error', (error) =>
+					reject(new HttpError(502, describeSshError(error, device)))
+				);
+				client.once('close', () => reject(new HttpError(502, 'Wi-Fi connection closed')));
+				client.connect({
+					...sshConfig(device),
+					hostHash: 'sha256',
+					hostVerifier: (key: string) => {
+						if (key === hostKey) return true;
+						reject(
+							new HttpError(
+								502,
+								'The Wi-Fi address belongs to a different device. Try setup again.'
+							)
+						);
+						return false;
+					}
+				});
+			});
+		} finally {
+			client.destroy();
+		}
 	}
 
 	private async loadIdentity(client: Client) {
@@ -257,6 +288,19 @@ export class Session {
 		emit({ type: 'restart', deviceId: this.id, pending: false });
 		emit({ type: 'library', deviceId: this.id });
 	}
+}
+
+function sshConfig(device: StoredDevice): ConnectConfig {
+	return {
+		host: device.host,
+		port: device.port,
+		username: device.username,
+		password: device.password,
+		privateKey: device.keyPath ? readKey(device.keyPath) : undefined,
+		readyTimeout: 10000,
+		keepaliveInterval: 15000,
+		keepaliveCountMax: 3
+	};
 }
 
 function readKey(keyPath: string): Buffer {
