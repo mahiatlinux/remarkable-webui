@@ -171,6 +171,56 @@ test('desktop screenshots save PNG bytes under the packaged security policy', as
 	expect(state.violations).toEqual([]);
 });
 
+test('the screen mirror resumes automatically when the tablet reconnects', async ({ page }) => {
+	await desktopApp(page);
+	await page.addInitScript(() => {
+		(window as any).EventSource = class {
+			onmessage: ((event: { data: string }) => void) | null = null;
+			constructor() {
+				(window as any).__deviceEvents = this;
+			}
+			close() {}
+		};
+	});
+	let connections = 0;
+	await page.routeWebSocket(`${backend.replace('http:', 'ws:')}/ws/screen*`, (ws) => {
+		connections++;
+		ws.send(
+			JSON.stringify({
+				type: 'meta',
+				width: 8,
+				height: 8,
+				visibleWidth: 8,
+				channels: 1,
+				model: 'reMarkable 2'
+			})
+		);
+	});
+	await page.goto('/screen');
+	const screenshot = page.getByRole('button', { name: 'Save screenshot', exact: true });
+	await expect(screenshot).toBeEnabled();
+	await page.evaluate(
+		(device) =>
+			(window as any).__deviceEvents.onmessage({
+				data: JSON.stringify({ type: 'device', device: { ...device, status: 'connecting' } })
+			}),
+		device
+	);
+	await expect(
+		page.getByText('Waiting for the tablet to reconnect…', { exact: true })
+	).toBeVisible();
+	await expect(screenshot).toBeDisabled();
+	await page.evaluate(
+		(device) =>
+			(window as any).__deviceEvents.onmessage({
+				data: JSON.stringify({ type: 'device', device: { ...device, host: '192.168.4.21' } })
+			}),
+		device
+	);
+	await expect(screenshot).toBeEnabled();
+	expect(connections).toBe(2);
+});
+
 test('desktop page SVG export keeps its data until the native write completes', async ({
 	page
 }) => {

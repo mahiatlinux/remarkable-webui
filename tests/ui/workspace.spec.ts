@@ -313,3 +313,21 @@ test('disconnecting from the sidebar also stops automatic reconnection', async (
 	await expect(page.getByRole('button', { name: 'No device', exact: true })).toBeVisible();
 	expect(connections).toBe(0);
 });
+
+test('Wi-Fi recovery shows its status and can be cancelled from Devices', async ({ page }) => {
+	const device = {
+		...(await mockTablet(page)),
+		host: '192.168.4.20',
+		status: 'connecting',
+		error: 'Tablet unavailable. Retrying Wi-Fi automatically…'
+	};
+	await page.route('**/api/devices', (route) => route.fulfill({ json: [device] }));
+	await page.route('**/api/devices/tablet/disconnect', (route) =>
+		route.fulfill({ json: { ...device, status: 'disconnected', error: undefined } })
+	);
+	await page.goto('/devices');
+	await expect(page.getByText(device.error, { exact: true })).toBeVisible();
+	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Connect', exact: true })).toBeEnabled();
+	expect(await page.evaluate(() => localStorage.getItem('rm_active_device'))).toBeNull();
+});

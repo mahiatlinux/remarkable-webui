@@ -57,6 +57,11 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - run: npm ci
+      - name: Configure macOS loopback addresses for SSH tests
+        if: runner.os == 'macOS'
+        run: |
+          sudo ifconfig lo0 alias 127.0.0.2 up
+          sudo ifconfig lo0 alias 127.0.0.3 up
       - name: Check release version
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
@@ -69,7 +74,13 @@ jobs:
         run: node tools/smoke-sidecar.mjs
       - name: Check Windows app startup
         if: runner.os == 'Windows'
-        run: node tools/smoke-desktop.mjs
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -LiteralPath src-tauri/target/release/bundle/nsis -Filter '*-setup.exe' | Select-Object -First 1
+          $installDir = Join-Path $env:RUNNER_TEMP 'remarkable-desktop-smoke'
+          $installation = Start-Process -FilePath $installer.FullName -ArgumentList '/S', "/D=$installDir" -WindowStyle Hidden -PassThru -Wait
+          if ($installation.ExitCode -ne 0) { throw "Installer failed with exit code $($installation.ExitCode)" }
+          node tools/smoke-desktop.mjs "$installDir/remarkable-webui.exe"
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.name }}

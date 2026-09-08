@@ -79,9 +79,9 @@ export default function SidebarFooter({ onsettings }: Props) {
 					items={[
 						...(current
 							? [
-									current.status === 'connected'
+									current.status === 'connected' || current.status === 'connecting'
 										? {
-												label: 'Disconnect',
+												label: current.status === 'connecting' ? 'Cancel connection' : 'Disconnect',
 												icon: 'cloud-off',
 												onclick: () =>
 													disconnectDevice(current.id).catch((error: Error) =>

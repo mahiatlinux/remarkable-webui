@@ -209,7 +209,7 @@ export default function DevicesView() {
 											</div>
 											<div className="text-[0.6875rem] font-mono text-gray-400 dark:text-gray-600 truncate">
 												{device.username}@{device.host}:{device.port}
-												{device.status === 'error' && device.error && (
+												{device.error && (
 													<span className="ml-2 font-sans text-red-500">{device.error}</span>
 												)}
 											</div>
@@ -231,13 +231,13 @@ export default function DevicesView() {
 													{wifiSetup === device.id ? 'Setting up Wi-Fi…' : 'Set up Wi-Fi'}
 												</button>
 											)}
-											{device.status === 'connected' && (
+											{(device.status === 'connected' || device.status === 'connecting') && (
 												<button
 													className="app-button-ghost h-7 px-2 rounded-full text-xs"
 													onClick={() => disconnect(device)}
 													disabled={wifiSetup !== null}
 												>
-													Disconnect
+													{device.status === 'connecting' ? 'Cancel' : 'Disconnect'}
 												</button>
 											)}
 											<button

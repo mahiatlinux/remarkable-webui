@@ -4,15 +4,24 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
-import { generateKeyPairSync } from 'node:crypto';
+import { createHash, generateKeyPairSync } from 'node:crypto';
 import { once } from 'node:events';
 import ssh2, { type Connection } from 'ssh2';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'remarkable-wifi-tests-'));
 process.env.RM_CONFIG_DIR = directory;
 const { createApp } = await import('../server/app');
-const { addDevice, getDevice, listDevices, saveWifiDevice, toPublic, updateDevice, USB_HOST } =
-	await import('../server/devices');
+const {
+	addDevice,
+	getDevice,
+	listDevices,
+	rememberConnection,
+	removeDevice,
+	saveWifiDevice,
+	toPublic,
+	updateDevice,
+	USB_HOST
+} = await import('../server/devices');
 const { disconnectAll, getSession } = await import('../server/session');
 
 function keyPair() {
@@ -24,6 +33,9 @@ function keyPair() {
 }
 
 const hostKey = keyPair().privateKey;
+const parsedHostKey = ssh2.utils.parseKey(hostKey);
+assert.ok(!(parsedHostKey instanceof Error));
+const fingerprint = createHash('sha256').update(parsedHostKey.getPublicSSH()).digest('hex');
 const otherHostKey = keyPair().privateKey;
 const clientKey = keyPair().privateKey;
 const keyPath = path.join(directory, 'client-key');
@@ -38,6 +50,24 @@ await once(api, 'listening');
 const address = api.address();
 assert.ok(address && typeof address !== 'string');
 const base = `http://127.0.0.1:${address.port}/api/devices`;
+
+test('USB setup reuses a manually saved Wi-Fi profile after its IP changes', (t) => {
+	const source = addDevice({ name: 'USB tablet', host: USB_HOST, password: 'saved-password' });
+	const wifi = addDevice({ name: 'My Wi-Fi tablet', host: '192.168.1.20' });
+	t.after(() => {
+		removeDevice(source.id);
+		removeDevice(wifi.id);
+	});
+	rememberConnection(source.id, source.host, fingerprint);
+	rememberConnection(wifi.id, wifi.host, fingerprint);
+	const count = listDevices().length;
+	const result = saveWifiDevice(source.id, '192.168.1.30');
+	assert.equal(result.id, wifi.id);
+	assert.equal(result.name, wifi.name);
+	assert.equal(result.host, '192.168.1.30');
+	assert.equal(result.password, 'saved-password');
+	assert.equal(listDevices().length, count);
+});
 
 after(async () => {
 	disconnectAll();
@@ -188,7 +218,7 @@ for (const address of ['', '169.254.1.2', 'invalid']) {
 		const result = await setup(fixture.device.id);
 		assert.equal(result.status, 400);
 		assert.match(result.body.error, /same Wi-Fi network/);
-		assert.deepEqual(getDevice(fixture.device.id), fixture.device);
+		assert.deepEqual(getDevice(fixture.device.id), { ...fixture.device, sshHostKey: fingerprint });
 		assert.equal(getSession(fixture.device.id).status, 'connected');
 		assert.equal(
 			fixture.commands.some((command) => command.includes('rm-ssh-over-wlan')),
@@ -202,7 +232,7 @@ test('a failed Wi-Fi enable command leaves the original connection usable', asyn
 	const result = await setup(fixture.device.id);
 	assert.equal(result.status, 502);
 	assert.match(result.body.error, /Could not enable Wi-Fi SSH/);
-	assert.deepEqual(getDevice(fixture.device.id), fixture.device);
+	assert.deepEqual(getDevice(fixture.device.id), { ...fixture.device, sshHostKey: fingerprint });
 	assert.equal(getSession(fixture.device.id).status, 'connected');
 });
 
@@ -211,7 +241,7 @@ test('an unreachable Wi-Fi service gives network guidance without saving it', as
 	const result = await setup(fixture.device.id);
 	assert.equal(result.status, 502);
 	assert.match(result.body.error, /same network/);
-	assert.deepEqual(getDevice(fixture.device.id), fixture.device);
+	assert.deepEqual(getDevice(fixture.device.id), { ...fixture.device, sshHostKey: fingerprint });
 });
 
 test('a different tablet at the Wi-Fi address never receives saved credentials', async (t) => {
@@ -220,7 +250,7 @@ test('a different tablet at the Wi-Fi address never receives saved credentials',
 	assert.equal(result.status, 502);
 	assert.match(result.body.error, /different device/);
 	assert.deepEqual(fixture.wifiAuthentications, []);
-	assert.deepEqual(getDevice(fixture.device.id), fixture.device);
+	assert.deepEqual(getDevice(fixture.device.id), { ...fixture.device, sshHostKey: fingerprint });
 });
 
 test('failed Wi-Fi authentication preserves the original connection and password', async (t) => {
@@ -228,7 +258,7 @@ test('failed Wi-Fi authentication preserves the original connection and password
 	const result = await setup(fixture.device.id);
 	assert.equal(result.status, 502);
 	assert.match(result.body.error, /Authentication failed/);
-	assert.deepEqual(getDevice(fixture.device.id), fixture.device);
+	assert.deepEqual(getDevice(fixture.device.id), { ...fixture.device, sshHostKey: fingerprint });
 	assert.equal(getSession(fixture.device.id).status, 'connected');
 });
 

@@ -27,7 +27,9 @@ Needs Node.js 22 or newer and SSH on the tablet. reMarkable 1 and 2 have it on b
 
 Over USB the tablet answers on `10.11.99.1`. To set up Wi-Fi, save and connect your tablet over USB, join the same Wi-Fi network as your computer, then open Devices and click **Set up Wi-Fi**. The app discovers the wireless address, enables Wi-Fi SSH through the tablet's built-in helper when needed, and tests the saved password or SSH key against the same tablet before saving a Wi-Fi connection. Your USB connection stays available. Once the library opens over Wi-Fi, you can unplug the cable.
 
-Keep the tablet awake while using Wi-Fi. **Set up Wi-Fi** appears on USB connections only and reuses a matching saved Wi-Fi connection. If your router changes its address, reconnect by USB and run setup on the original USB connection again; its Wi-Fi profile is updated instead of duplicated. You can also enter a Wi-Fi address manually in the Host field. Uploads and PDF export still need "USB web interface" enabled under Settings › Storage.
+Keep the tablet awake while using Wi-Fi. **Set up Wi-Fi** appears on USB connections only and reuses a matching saved Wi-Fi connection. After a successful connection, the app remembers the tablet's SSH identity. If the connection drops or its IP address changes, the app searches the connected local networks for that identity and reconnects automatically, updating the same saved profile. Discovery checks identity before sending credentials. Retries pause for up to 30 seconds between attempts; **Cancel** or **Disconnect** stops them. Existing connections need one successful connection after upgrading to learn the identity; if their saved address is already stale, connect by USB and run setup once.
+
+Discovery supports local IPv4 networks and checks a bounded part of very large subnets. It cannot reach a sleeping tablet or bypass guest-network isolation. The screen mirror resumes when the connection returns. Uploads and PDF export still need "USB web interface" enabled under Settings › Storage.
 
 ```sh
 npm install

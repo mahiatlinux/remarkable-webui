@@ -9,6 +9,7 @@ import { HttpError } from './http';
 export interface StoredDevice extends DeviceInput {
 	id: string;
 	wifiSourceId?: string;
+	sshHostKey?: string;
 }
 
 const configDir = process.env.RM_CONFIG_DIR ?? path.join(homedir(), '.config', 'remarkable-webui');
@@ -32,7 +33,7 @@ function save() {
 }
 
 export function toPublic(device: StoredDevice): Device {
-	const { password, wifiSourceId, ...rest } = device;
+	const { password, wifiSourceId, sshHostKey, ...rest } = device;
 	return { ...rest, hasPassword: Boolean(password) };
 }
 
@@ -86,6 +87,14 @@ export function saveWifiDevice(sourceId: string, host: string): StoredDevice {
 		devices.find((device) => device.wifiSourceId === sourceId) ??
 		devices.find(
 			(device) =>
+				device.host !== USB_HOST &&
+				source.sshHostKey &&
+				device.sshHostKey === source.sshHostKey &&
+				device.port === source.port &&
+				device.username === source.username
+		) ??
+		devices.find(
+			(device) =>
 				device.host === host && device.port === source.port && device.username === source.username
 		);
 	const device: StoredDevice = {
@@ -102,19 +111,35 @@ export function saveWifiDevice(sourceId: string, host: string): StoredDevice {
 	return device;
 }
 
+export function rememberConnection(id: string, host: string, sshHostKey: string) {
+	const current = getDevice(id);
+	if (current.host === host && current.sshHostKey === sshHostKey) return;
+	devices = devices.map((device) => (device.id === id ? { ...device, host, sshHostKey } : device));
+	save();
+}
+
 export function removeDevice(id: string) {
 	getDevice(id);
 	devices = devices.filter((entry) => entry.id !== id);
 	save();
 }
 
-export function probeTcp(host: string, port: number, timeoutMs = 800): Promise<boolean> {
+export function probeTcp(
+	host: string,
+	port: number,
+	timeoutMs = 800,
+	signal?: AbortSignal
+): Promise<boolean> {
+	if (signal?.aborted) return Promise.resolve(false);
 	return new Promise((resolve) => {
 		const socket = connect({ host, port });
 		const done = (result: boolean) => {
+			signal?.removeEventListener('abort', abort);
 			socket.destroy();
 			resolve(result);
 		};
+		const abort = () => done(false);
+		signal?.addEventListener('abort', abort, { once: true });
 		socket.setTimeout(timeoutMs, () => done(false));
 		socket.once('connect', () => done(true));
 		socket.once('error', () => done(false));

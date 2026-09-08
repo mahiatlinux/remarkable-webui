@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import fixWebmDuration from 'fix-webm-duration';
 import type { ScreenError, ScreenMeta } from '$shared/types';
 import { useStore } from '$lib/store';
-import { activeDeviceId } from '$lib/stores';
+import { activeDeviceId, devices } from '$lib/stores';
 import { downloadBlob } from '$lib/apis/client';
 import { toast } from 'sonner';
 import Icon from '../Icon';
@@ -83,6 +83,7 @@ function drawPacket(context: CanvasRenderingContext2D, packet: ArrayBuffer, meta
 
 export default function ScreenView() {
 	const deviceId = useStore(activeDeviceId);
+	const deviceStatus = useStore(devices).find((device) => device.id === deviceId)?.status;
 	const canvas = useRef<HTMLCanvasElement | null>(null);
 	const area = useRef<HTMLDivElement | null>(null);
 	const [meta, setMeta] = useState<ScreenMeta | null>(null);
@@ -117,6 +118,10 @@ export default function ScreenView() {
 		if (!deviceId) return;
 		setError(null);
 		setMeta(null);
+		if (deviceStatus !== 'connected') {
+			setError('Waiting for the tablet to reconnect…');
+			return;
+		}
 		const socket = new WebSocket(websocketUrl(`/ws/screen?device=${deviceId}`));
 		socket.binaryType = 'arraybuffer';
 		let current: ScreenMeta | null = null;
@@ -153,7 +158,7 @@ export default function ScreenView() {
 			socket.onclose = null;
 			socket.close();
 		};
-	}, [deviceId, generation]);
+	}, [deviceId, deviceStatus, generation]);
 
 	useEffect(() => {
 		function onFullscreenChange() {

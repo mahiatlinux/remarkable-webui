@@ -39,7 +39,7 @@ const exited = once(child, 'exit');
 let browser;
 let serviceUrl;
 try {
-	const deadline = Date.now() + 20000;
+	const deadline = Date.now() + 60000;
 	while (true) {
 		if (child.exitCode !== null) throw new Error(`Desktop exited before startup: ${errors}`);
 		try {

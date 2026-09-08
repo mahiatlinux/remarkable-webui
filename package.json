@@ -1,7 +1,7 @@
 {
 	"name": "remarkable-webui",
 	"private": true,
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"type": "module",
 	"scripts": {
 		"dev": "concurrently -k -n server,web -c blue,magenta \"tsx watch server/index.ts\" \"vite dev\"",

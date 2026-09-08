@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { Client, type ClientChannel, type ConnectConfig, type SFTPWrapper } from 'ssh2';
 import type { DeviceState, SessionStatus } from '../shared/types';
-import { getDevice, listDevices, toPublic, type StoredDevice } from './devices';
+import {
+	getDevice,
+	listDevices,
+	rememberConnection,
+	toPublic,
+	USB_HOST,
+	type StoredDevice
+} from './devices';
+import { discoverWifi } from './discovery';
 import { emit } from './events';
 import { HttpError } from './http';
 
@@ -18,6 +26,15 @@ export interface ExecOptions {
 
 const sessions = new Map<string, Session>();
 
+class ConnectionError extends HttpError {
+	constructor(
+		message: string,
+		readonly retryable = true
+	) {
+		super(502, message);
+	}
+}
+
 export class Session {
 	readonly id: string;
 	status: SessionStatus = 'disconnected';
@@ -26,12 +43,17 @@ export class Session {
 	firmware?: string;
 	pendingRestart = false;
 	private client: Client | null = null;
-	private hostKey?: string;
 	private sftpWrapper: SFTPWrapper | null = null;
 	private connecting: Promise<void> | null = null;
 	private restartTimer: NodeJS.Timeout | null = null;
+	private retryTimer: NodeJS.Timeout | null = null;
+	private retryDelay = 2000;
+	private attempt: AbortController | null = null;
 
-	constructor(id: string) {
+	constructor(
+		id: string,
+		private readonly discover = discoverWifi
+	) {
 		this.id = id;
 	}
 
@@ -59,63 +81,143 @@ export class Session {
 	connect(): Promise<void> {
 		if (this.status === 'connected') return Promise.resolve();
 		if (this.connecting) return this.connecting;
-		this.connecting = this.open().finally(() => {
-			this.connecting = null;
-		});
-		return this.connecting;
+		if (this.retryTimer) clearTimeout(this.retryTimer);
+		this.retryTimer = null;
+		const attempt = new AbortController();
+		this.attempt = attempt;
+		this.setStatus('connecting');
+		const pending = this.openWithRecovery(attempt.signal)
+			.catch((error: Error) => {
+				if (!attempt.signal.aborted) {
+					if (this.canRetry(error)) this.scheduleReconnect();
+					else this.setStatus('error', error.message);
+				}
+				throw error;
+			})
+			.finally(() => {
+				if (this.attempt === attempt) this.attempt = null;
+				if (this.connecting === pending) this.connecting = null;
+			});
+		this.connecting = pending;
+		return pending;
 	}
 
-	private open(): Promise<void> {
+	private canRetry(error?: Error): boolean {
+		return (
+			this.device.host !== USB_HOST &&
+			Boolean(this.device.sshHostKey) &&
+			(!error || (error instanceof ConnectionError && error.retryable))
+		);
+	}
+
+	private scheduleReconnect() {
+		if (this.retryTimer) return;
+		this.retryTimer = setTimeout(() => {
+			this.retryTimer = null;
+			void this.connect().catch(() => {});
+		}, this.retryDelay);
+		this.retryTimer.unref();
+		this.retryDelay = Math.min(this.retryDelay * 2, 30000);
+		this.setStatus('connecting', 'Tablet unavailable. Retrying Wi-Fi automatically…');
+	}
+
+	private async openWithRecovery(signal: AbortSignal): Promise<void> {
 		const device = this.device;
-		this.setStatus('connecting');
+		try {
+			await this.open(device, signal);
+		} catch (error) {
+			signal.throwIfAborted();
+			if (!this.canRetry(error as Error)) throw error;
+			const host = await this.discover(device, signal);
+			signal.throwIfAborted();
+			if (!host) throw error;
+			await this.open({ ...device, host }, signal);
+		}
+	}
+
+	private open(device: StoredDevice, signal: AbortSignal): Promise<void> {
 		return new Promise((resolve, reject) => {
 			const client = new Client();
 			let settled = false;
-			const fail = (message: string) => {
+			let hostKey: string | undefined;
+			let wrongHost = false;
+			const fail = (error: Error) => {
 				if (!settled) {
 					settled = true;
-					this.client = null;
-					this.setStatus('error', message);
-					reject(new HttpError(502, message));
+					signal.removeEventListener('abort', abort);
+					if (this.client === client) this.client = null;
+					client.destroy();
+					reject(error);
 				}
 			};
+			const abort = () => fail(new ConnectionError('Connection cancelled', false));
+			if (signal.aborted) return abort();
+			signal.addEventListener('abort', abort, { once: true });
 			client.on('ready', async () => {
+				if (settled) return;
 				this.client = client;
 				try {
 					await this.loadIdentity(client);
+					if (signal.aborted || settled) return;
+					if (!hostKey) throw new Error('The tablet did not provide an SSH identity');
+					rememberConnection(this.id, device.host, hostKey);
 				} catch (error) {
-					client.end();
-					fail(`Connected but failed to identify device: ${(error as Error).message}`);
+					fail(
+						new ConnectionError(
+							`Connected but failed to identify device: ${(error as Error).message}`,
+							false
+						)
+					);
 					return;
 				}
 				settled = true;
+				signal.removeEventListener('abort', abort);
+				this.retryDelay = 2000;
 				this.setStatus('connected');
 				resolve();
 			});
-			client.on('error', (error) => fail(describeSshError(error, device)));
+			client.on('error', (error) => {
+				fail(
+					new ConnectionError(
+						wrongHost
+							? 'The saved address belongs to a different device.'
+							: describeSshError(error, device),
+						error.level !== 'client-authentication'
+					)
+				);
+				client.destroy();
+			});
 			client.on('close', () => {
-				this.sftpWrapper = null;
 				if (this.client === client) {
 					this.client = null;
-					if (this.status !== 'error') this.setStatus('disconnected');
+					this.sftpWrapper = null;
+					if (settled) {
+						if (this.canRetry()) this.scheduleReconnect();
+						else this.setStatus('disconnected');
+					}
 				}
-				fail('Connection closed');
+				fail(new ConnectionError('Connection closed'));
 			});
-			client.connect({
-				...sshConfig(device),
-				hostHash: 'sha256',
-				hostVerifier: (key: string) => {
-					this.hostKey = key;
-					return true;
-				}
-			});
+			try {
+				client.connect({
+					...sshConfig(device),
+					hostHash: 'sha256',
+					hostVerifier: (key: string) => {
+						hostKey = key;
+						wrongHost = Boolean(device.sshHostKey && key !== device.sshHostKey);
+						return !wrongHost;
+					}
+				});
+			} catch (error) {
+				fail(new ConnectionError((error as Error).message, false));
+			}
 		});
 	}
 
 	async verifyAddress(host: string): Promise<void> {
 		await this.ready();
 		const device = { ...this.device, host };
-		const hostKey = this.hostKey;
+		const hostKey = this.device.sshHostKey;
 		const client = new Client();
 		try {
 			await new Promise<void>((resolve, reject) => {
@@ -156,6 +258,12 @@ export class Session {
 	}
 
 	disconnect() {
+		if (this.retryTimer) clearTimeout(this.retryTimer);
+		this.retryTimer = null;
+		this.retryDelay = 2000;
+		this.attempt?.abort();
+		this.attempt = null;
+		this.connecting = null;
 		if (this.restartTimer) clearTimeout(this.restartTimer);
 		this.restartTimer = null;
 		const client = this.client;
@@ -298,7 +406,7 @@ function sshConfig(device: StoredDevice): ConnectConfig {
 		password: device.password,
 		privateKey: device.keyPath ? readKey(device.keyPath) : undefined,
 		readyTimeout: 10000,
-		keepaliveInterval: 15000,
+		keepaliveInterval: 5000,
 		keepaliveCountMax: 3
 	};
 }
