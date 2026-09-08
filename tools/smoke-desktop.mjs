@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
@@ -20,12 +20,40 @@ await once(listener, 'listening');
 const port = listener.address().port;
 await new Promise((resolve) => listener.close(resolve));
 const debugUrl = `http://127.0.0.1:${port}`;
+const browserArguments = `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1`;
+const userDataFolder = path.join(profile, 'webview');
+const policies =
+	process.env.GITHUB_ACTIONS === 'true'
+		? [
+				['AdditionalBrowserArguments', browserArguments],
+				['UserDataFolder', userDataFolder]
+			]
+		: [];
+const policyRoot = 'HKLM\\Software\\Policies\\Microsoft\\Edge\\WebView2';
+for (const [name, value] of policies) {
+	execFileSync(
+		'reg.exe',
+		[
+			'add',
+			`${policyRoot}\\${name}`,
+			'/v',
+			path.basename(executable),
+			'/t',
+			'REG_SZ',
+			'/d',
+			value,
+			'/f',
+			'/reg:64'
+		],
+		{ windowsHide: true, stdio: 'pipe' }
+	);
+}
 const child = spawn(executable, [], {
 	windowsHide: true,
 	env: {
 		...process.env,
-		WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1`,
-		WEBVIEW2_USER_DATA_FOLDER: path.join(profile, 'webview'),
+		WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: browserArguments,
+		WEBVIEW2_USER_DATA_FOLDER: userDataFolder,
 		RM_CONFIG_DIR: path.join(profile, 'config')
 	},
 	stdio: ['ignore', 'pipe', 'pipe']
@@ -86,6 +114,13 @@ try {
 	await assert.rejects(fetch(`${serviceUrl}/api/devices`));
 	console.log('Windows desktop: native close stopped the tablet service.');
 } finally {
+	for (const [name] of policies) {
+		execFileSync(
+			'reg.exe',
+			['delete', `${policyRoot}\\${name}`, '/v', path.basename(executable), '/f', '/reg:64'],
+			{ windowsHide: true, stdio: 'pipe' }
+		);
+	}
 	await browser?.close().catch(() => {});
 	if (child.exitCode === null) {
 		child.kill();
