@@ -21,6 +21,8 @@ const HELPER_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'b
 const REMOTE_DIR = '/home/root/.cache/remarkable-webui';
 const HEADER_SIZE = 10;
 const PACKET_HEADER = 8;
+const CHUNK_HEADER = 16n;
+const PAGE_SIZE = 4096n;
 
 function versionAtLeast(version: string | undefined, minimum: string): boolean {
 	if (!version) return false;
@@ -101,19 +103,20 @@ async function walkArena(
 	pid: string,
 	base: bigint,
 	minimum: number
-): Promise<bigint | null> {
+): Promise<{ pointer: bigint; bytes: number } | null> {
 	let offset = 0n;
-	let length = 2;
-	for (let i = 0; i < 16 && length - 2 < minimum; i++) {
-		offset += BigInt(length - 2);
+	for (let i = 0; i < 16; i++) {
+		let bytes: number;
 		try {
-			length = (await readMemory(session, pid, base + offset + 8n, 4)).readUInt32LE(0);
+			bytes = ((await readMemory(session, pid, base + offset + 8n, 4)).readUInt32LE(0) & ~7) - 16;
 		} catch {
 			return null;
 		}
-		if (length < 2) return null;
+		if (bytes <= 0) return null;
+		if (bytes >= minimum) return { pointer: base + offset + CHUNK_HEADER, bytes };
+		offset += ((BigInt(bytes) + CHUNK_HEADER + PAGE_SIZE - 1n) / PAGE_SIZE) * PAGE_SIZE;
 	}
-	return length - 2 >= minimum ? base + offset : null;
+	return null;
 }
 
 async function drmFramebuffer(
@@ -135,11 +138,10 @@ async function drmFramebuffer(
 		) {
 			continue;
 		}
-		const pointer = await walkArena(session, pid, maps[i].end, minimum);
-		if (pointer === null) continue;
-		const length = (await readMemory(session, pid, pointer + 8n, 4)).readUInt32LE(0);
-		const stride = Math.floor((length - 2) / (height * 4));
-		return { pointer, stride: stride >= width ? stride : width };
+		const chunk = await walkArena(session, pid, maps[i].end, minimum);
+		if (!chunk) continue;
+		const stride = Math.floor(chunk.bytes / (height * 4));
+		return { pointer: chunk.pointer, stride: stride >= width ? stride : width };
 	}
 	throw new Error('framebuffer not found in xochitl memory');
 }
