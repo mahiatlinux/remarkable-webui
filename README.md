@@ -53,7 +53,7 @@ Build a release installer with `npm run desktop:build`. Outputs are under `src-t
 
 The build bundles the backend and copies the build machine's Node executable. Build on the same OS and architecture as the installer. End users do not need Node or Rust. The desktop backend uses a random loopback port and a token unique to each app session. Closing the app stops that backend. Saved tablet connections share the web app's config directory.
 
-The `desktop` workflow builds Linux x64, Windows x64 and both macOS architectures. Run it manually for downloadable CI artifacts. Version tags attach installers to the GitHub release alongside the web archive. Packages are unsigned unless signing credentials are configured on the build machine.
+The `desktop` workflow builds Linux x64 on Ubuntu 22.04, Windows x64 and both macOS architectures. Run it manually for downloadable CI artifacts. Version tags attach installers to the GitHub release alongside the web archive. Packages are unsigned unless signing credentials are configured on the build machine.
 
 ## Development checks
 
