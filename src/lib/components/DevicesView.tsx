@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { DeviceInput, DeviceState } from '$shared/types';
+import type { DeviceInput, DeviceState, UsbProbe } from '$shared/types';
+import { isUsbDevice, USB_HOST } from '$shared/devices';
 import { useStore } from '$lib/store';
 import { activeDeviceId, devices, devicesLoaded } from '$lib/stores';
 import {
@@ -17,8 +18,6 @@ import Icon from './Icon';
 import PageHeader from './common/PageHeader';
 import Spinner from './common/Spinner';
 import { ConfirmDialog } from './common/Dialog';
-
-const USB_HOST = '10.11.99.1';
 
 type Draft = DeviceInput & { id?: string };
 
@@ -75,7 +74,7 @@ export default function DevicesView() {
 	const [draft, setDraft] = useState<Draft | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [wifiSetup, setWifiSetup] = useState<string | null>(null);
-	const [usb, setUsb] = useState<boolean | null>(null);
+	const [usb, setUsb] = useState<UsbProbe | null>(null);
 	const [removing, setRemoving] = useState<DeviceState | null>(null);
 
 	useEffect(() => {
@@ -86,8 +85,8 @@ export default function DevicesView() {
 		let cancelled = false;
 		const check = () =>
 			probeUsb()
-				.then((result) => !cancelled && setUsb(result.reachable))
-				.catch(() => !cancelled && setUsb(false));
+				.then((result) => !cancelled && setUsb(result))
+				.catch(() => !cancelled && setUsb({ reachable: false, host: USB_HOST }));
 		check();
 		const timer = setInterval(check, 5000);
 		return () => {
@@ -103,6 +102,7 @@ export default function DevicesView() {
 		try {
 			const payload = {
 				...draft,
+				usb: isUsbDevice(draft),
 				password: draft.password || undefined,
 				keyPath: draft.keyPath || undefined
 			};
@@ -157,7 +157,8 @@ export default function DevicesView() {
 			username: device.username,
 			password: '',
 			keyPath: device.keyPath ?? '',
-			autoRestart: device.autoRestart
+			autoRestart: device.autoRestart,
+			usb: isUsbDevice(device)
 		});
 	}
 
@@ -169,8 +170,8 @@ export default function DevicesView() {
 					<Icon name="usb" size={12} />
 					{usb === null
 						? 'Checking USB…'
-						: usb
-							? `Tablet on USB (${USB_HOST})`
+						: usb.reachable
+							? `Tablet on USB (${usb.host}:${usb.port ?? 22})`
 							: 'No tablet on USB'}
 				</span>
 			</PageHeader>
@@ -216,7 +217,7 @@ export default function DevicesView() {
 										</div>
 										<div className="flex flex-wrap items-center gap-1 ml-auto">
 											{device.status === 'connecting' && <Spinner size={12} />}
-											{device.host === USB_HOST && (
+											{isUsbDevice(device) && (
 												<button
 													className="app-button-ghost flex items-center gap-1.5 h-7 px-2 rounded-full text-xs"
 													onClick={() => configureWifi(device)}
@@ -280,15 +281,20 @@ export default function DevicesView() {
 								<h2 className="text-xs text-gray-900 dark:text-white">
 									{draft.id ? 'Edit device' : 'New device'}
 								</h2>
-								{usb && draft.host !== USB_HOST && (
-									<button
-										type="button"
-										className="text-[0.6875rem] text-gray-500 hover:text-gray-900 dark:hover:text-white"
-										onClick={() => setDraft({ ...draft, host: USB_HOST })}
-									>
-										Use USB address
-									</button>
-								)}
+								{usb?.reachable &&
+									(draft.host !== usb.host ||
+										draft.port !== (usb.port ?? 22) ||
+										!isUsbDevice(draft)) && (
+										<button
+											type="button"
+											className="text-[0.6875rem] text-gray-500 hover:text-gray-900 dark:hover:text-white"
+											onClick={() =>
+												setDraft({ ...draft, host: usb.host, port: usb.port ?? 22, usb: true })
+											}
+										>
+											Use USB address
+										</button>
+									)}
 							</div>
 							{!draft.id && (
 								<ol className="device-guide flex flex-col gap-3 px-4 py-3.5">
@@ -297,15 +303,16 @@ export default function DevicesView() {
 										title={
 											<>
 												Plug in the USB cable
-												<span className={`status-dot ${usb ? 'connected' : ''}`}></span>
+												<span className={`status-dot ${usb?.reachable ? 'connected' : ''}`}></span>
 												<span className="text-[0.6875rem] font-medium text-gray-400 dark:text-gray-600">
-													{usb ? 'Tablet found' : 'Nothing on USB yet'}
+													{usb?.reachable ? 'Tablet found' : 'Nothing on USB yet'}
 												</span>
 											</>
 										}
 									>
 										The tablet answers at {USB_HOST} over the cable. After saving your device,
-										choose Set up Wi-Fi to connect wirelessly with the same login.
+										choose Set up Wi-Fi to connect wirelessly with the same login. For an SSH
+										tunnel, enter its host and port and check USB attached.
 									</Step>
 									<Step number={2} title="Make sure SSH is on">
 										reMarkable 1 and 2 have it on out of the box. Paper Pro and newer need Settings
@@ -348,6 +355,16 @@ export default function DevicesView() {
 										aria-label="Port"
 										onChange={(e) => setDraft({ ...draft, port: Number(e.currentTarget.value) })}
 									/>
+								</Row>
+								<Row label="Connection">
+									<label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+										<input
+											type="checkbox"
+											checked={isUsbDevice(draft)}
+											onChange={(e) => setDraft({ ...draft, usb: e.currentTarget.checked })}
+										/>
+										USB attached (including SSH tunnels)
+									</label>
 								</Row>
 								<Row label="Login">
 									<input

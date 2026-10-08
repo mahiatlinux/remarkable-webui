@@ -1,14 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { Client, type ClientChannel, type ConnectConfig, type SFTPWrapper } from 'ssh2';
 import type { DeviceState, SessionStatus } from '../shared/types';
-import {
-	getDevice,
-	listDevices,
-	rememberConnection,
-	toPublic,
-	USB_HOST,
-	type StoredDevice
-} from './devices';
+import { getDevice, listDevices, rememberConnection, toPublic, type StoredDevice } from './devices';
+import { isUsbDevice } from '../shared/devices';
 import { discoverWifi } from './discovery';
 import { emit } from './events';
 import { HttpError } from './http';
@@ -104,7 +98,7 @@ export class Session {
 
 	private canRetry(error?: Error): boolean {
 		return (
-			this.device.host !== USB_HOST &&
+			!isUsbDevice(this.device) &&
 			Boolean(this.device.sshHostKey) &&
 			(!error || (error instanceof ConnectionError && error.retryable))
 		);
@@ -214,9 +208,9 @@ export class Session {
 		});
 	}
 
-	async verifyAddress(host: string): Promise<void> {
+	async verifyAddress(host: string, port = this.device.port): Promise<void> {
 		await this.ready();
-		const device = { ...this.device, host };
+		const device = { ...this.device, host, port };
 		const hostKey = this.device.sshHostKey;
 		const client = new Client();
 		try {
@@ -419,12 +413,19 @@ function readKey(keyPath: string): Buffer {
 	}
 }
 
-function describeSshError(error: Error & { level?: string }, device: StoredDevice): string {
+export function describeSshError(
+	error: Error & { level?: string },
+	device: StoredDevice,
+	platform = process.platform
+): string {
 	if (error.level === 'client-authentication') {
 		return 'Authentication failed. Check the password from Settings > Help > Copyrights and licenses.';
 	}
 	if ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED') {
 		return `Connection refused by ${device.host}:${device.port}. Is SSH enabled on the tablet?`;
+	}
+	if (platform === 'darwin' && (error as NodeJS.ErrnoException).code === 'EHOSTUNREACH') {
+		return `Cannot reach ${device.host}. macOS may be blocking local-network access for this app or Node. Check System Settings > Privacy & Security > Local Network. If system SSH works, use a forwarded localhost port and mark the device as USB attached (see README).`;
 	}
 	if (
 		(error as NodeJS.ErrnoException).code === 'EHOSTUNREACH' ||

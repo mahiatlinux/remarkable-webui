@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { createHash, generateKeyPairSync } from 'node:crypto';
 import { once } from 'node:events';
+import { Socket } from 'node:net';
 import ssh2, { type Connection } from 'ssh2';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'remarkable-wifi-tests-'));
@@ -86,6 +87,7 @@ async function tablet(
 	options: {
 		address?: string;
 		wifiReady?: boolean;
+		usbTunnel?: boolean;
 		helperCode?: number;
 		helperAvailable?: boolean;
 		otherDevice?: boolean;
@@ -168,6 +170,7 @@ async function tablet(
 		name: 'Test tablet',
 		host: '127.0.0.1',
 		port,
+		...(options.usbTunnel ? { usb: true } : {}),
 		...(options.useKey ? { keyPath } : { password: 'saved-password' })
 	});
 	return { device, commands, wifiAuthentications };
@@ -335,4 +338,55 @@ test('Wi-Fi setup can retry after the saved login is corrected', async (t) => {
 	updateDevice(fixture.device.id, { password: 'saved-password' });
 	const retried = await setup(fixture.device.id);
 	assert.equal(retried.status, 200, JSON.stringify(retried.body));
+});
+
+test('forwarded USB profiles preserve their endpoint and save Wi-Fi on the tablet SSH port', () => {
+	const usb = addDevice({ host: '127.0.0.1', port: 2222, usb: true, password: 'saved' });
+	const otherUsb = addDevice({ host: 'localhost', port: 2223, usb: true });
+	rememberConnection(usb.id, usb.host, fingerprint);
+	rememberConnection(otherUsb.id, otherUsb.host, fingerprint);
+	const wifi = saveWifiDevice(usb.id, '192.168.8.20');
+	assert.notEqual(wifi.id, usb.id);
+	assert.notEqual(wifi.id, otherUsb.id);
+	assert.equal(wifi.port, 22);
+	assert.equal(wifi.usb, false);
+	assert.equal(getDevice(usb.id).host, '127.0.0.1');
+	assert.equal(getDevice(usb.id).port, 2222);
+	assert.equal(getDevice(usb.id).usb, true);
+	const updated = saveWifiDevice(usb.id, '192.168.8.21');
+	assert.equal(updated.id, wifi.id);
+	assert.equal(updated.port, 22);
+});
+
+test('forwarded USB setup probes and verifies port 22, leaving the tunnel connected', async (t) => {
+	const fixture = await tablet(t, { usbTunnel: true, wifiReady: true });
+	const connect = Socket.prototype.connect;
+	let forwardedAttempts = 0;
+	t.mock.method(Socket.prototype, 'connect', function (this: Socket, ...args: any[]) {
+		const options = Array.isArray(args[0]) ? args[0][0] : args[0];
+		if (options?.host === '127.0.0.2' && Number(options.port) === 22) {
+			forwardedAttempts++;
+			options.port = fixture.device.port;
+		}
+		return connect.apply(this, args as Parameters<typeof connect>);
+	});
+	const result = await setup(fixture.device.id);
+	assert.equal(result.status, 200, JSON.stringify(result.body));
+	assert.equal(forwardedAttempts, 3);
+	assert.notEqual(result.body.id, fixture.device.id);
+	assert.equal(result.body.port, 22);
+	assert.equal(result.body.usb, false);
+	assert.equal(result.body.status, 'connected');
+	assert.equal(getDevice(fixture.device.id).port, fixture.device.port);
+	assert.equal(getSession(fixture.device.id).status, 'connected');
+	assert.equal(fixture.wifiAuthentications.filter((method) => method === 'password').length, 2);
+});
+
+test('Wi-Fi setup does not overwrite a linked profile edited into another USB tunnel', () => {
+	const source = addDevice({ host: '127.0.0.1', port: 2222, usb: true });
+	const oldWifi = saveWifiDevice(source.id, '192.168.9.20');
+	const secondTunnel = updateDevice(oldWifi.id, { host: 'localhost', port: 2223, usb: true });
+	const wifi = saveWifiDevice(source.id, '192.168.9.21');
+	assert.notEqual(wifi.id, secondTunnel.id);
+	assert.deepEqual(getDevice(secondTunnel.id), secondTunnel);
 });

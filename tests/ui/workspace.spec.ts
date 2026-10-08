@@ -331,3 +331,129 @@ test('Wi-Fi recovery shows its status and can be cancelled from Devices', async 
 	await expect(page.getByRole('button', { name: 'Connect', exact: true })).toBeEnabled();
 	expect(await page.evaluate(() => localStorage.getItem('rm_active_device'))).toBeNull();
 });
+
+test('forwarded USB connections retain their endpoint and USB flag when created and edited', async ({
+	page
+}) => {
+	let device = {
+		...(await mockTablet(page, false)),
+		host: '127.0.0.1',
+		port: 2222,
+		usb: true
+	};
+	let saved = false;
+	const writes: { method: string; data: Record<string, unknown> }[] = [];
+	await page.route('**/api/devices', async (route) => {
+		if (route.request().method() === 'POST') {
+			const data = route.request().postDataJSON();
+			writes.push({ method: 'POST', data });
+			device = { ...device, ...data };
+			saved = true;
+			return route.fulfill({ json: device });
+		}
+		return route.fulfill({ json: saved ? [device] : [] });
+	});
+	await page.route('**/api/devices/tablet', async (route) => {
+		const data = route.request().postDataJSON();
+		writes.push({ method: route.request().method(), data });
+		device = { ...device, ...data };
+		await route.fulfill({ json: device });
+	});
+	await page.route('**/api/devices/tablet/connect', (route) => route.fulfill({ json: device }));
+	await page.goto('/devices');
+	const usb = page.getByRole('checkbox', { name: 'USB attached' });
+	await expect(usb).toBeChecked();
+	await page.getByLabel('Host', { exact: true }).fill('127.0.0.1');
+	await page.getByLabel('Port', { exact: true }).fill('2222');
+	await expect(usb).not.toBeChecked();
+	await usb.check();
+	await page.getByLabel('Name', { exact: true }).fill('USB tunnel');
+	await page.getByRole('button', { name: 'Add and connect' }).click();
+	await expect(page).toHaveURL('/library');
+	expect(writes[0]).toMatchObject({
+		method: 'POST',
+		data: { host: '127.0.0.1', port: 2222, usb: true, name: 'USB tunnel' }
+	});
+	await page.goto('/devices');
+	await expect(page.getByRole('button', { name: 'Set up Wi-Fi', exact: true })).toBeVisible();
+	await page.getByRole('button', { name: 'Edit', exact: true }).click();
+	await expect(usb).toBeChecked();
+	await expect(page.getByLabel('Host', { exact: true })).toHaveValue('127.0.0.1');
+	await expect(page.getByLabel('Port', { exact: true })).toHaveValue('2222');
+	await page.getByLabel('Name', { exact: true }).fill('Renamed tunnel');
+	await page.getByRole('button', { name: 'Save and connect' }).click();
+	await expect(page).toHaveURL('/library');
+	expect(writes[1]).toMatchObject({
+		method: 'PATCH',
+		data: { host: '127.0.0.1', port: 2222, usb: true, name: 'Renamed tunnel' }
+	});
+	await page.goto('/devices');
+	await page.getByRole('button', { name: 'Edit', exact: true }).click();
+	await usb.uncheck();
+	await page.getByLabel('Host', { exact: true }).fill('192.168.4.20');
+	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: 'Edit', exact: true }).click();
+	await expect(usb).toBeChecked();
+	await expect(page.getByLabel('Host', { exact: true })).toHaveValue('127.0.0.1');
+	expect(writes).toHaveLength(2);
+	await usb.uncheck();
+	await page.getByRole('button', { name: 'Save and connect' }).click();
+	await expect(page).toHaveURL('/library');
+	expect(writes[2].data.usb).toBe(false);
+	await page.goto('/devices');
+	await expect(page.getByRole('button', { name: 'Set up Wi-Fi', exact: true })).toHaveCount(0);
+});
+
+test('USB status and address shortcut use the reachable forwarded endpoint', async ({ page }) => {
+	await mockTablet(page, false);
+	await page.route('**/api/usb', (route) =>
+		route.fulfill({ json: { reachable: true, host: '127.0.0.1', port: 2222 } })
+	);
+	await page.goto('/devices');
+	await expect(page.getByText('Tablet on USB (127.0.0.1:2222)', { exact: true })).toBeVisible();
+	await page.getByRole('button', { name: 'Use USB address', exact: true }).click();
+	await expect(page.getByLabel('Host', { exact: true })).toHaveValue('127.0.0.1');
+	await expect(page.getByLabel('Port', { exact: true })).toHaveValue('2222');
+	await expect(page.getByRole('checkbox', { name: 'USB attached' })).toBeChecked();
+	await expect(page.getByRole('button', { name: 'Use USB address', exact: true })).toHaveCount(0);
+});
+
+test('Wi-Fi setup follows explicit USB flags and preserves legacy USB connections', async ({
+	page
+}) => {
+	const base = await mockTablet(page, false);
+	const devices = [
+		{ ...base, id: 'legacy', name: 'Legacy USB' },
+		{ ...base, id: 'tunnel', name: 'USB tunnel', host: 'localhost', port: 2222, usb: true },
+		{ ...base, id: 'override', name: 'Explicit Wi-Fi', usb: false },
+		{ ...base, id: 'wireless', name: 'Wireless tablet', host: '192.168.4.20' }
+	];
+	await page.route('**/api/devices', (route) => route.fulfill({ json: devices }));
+	await page.route('**/api/devices/tunnel/wifi', (route) =>
+		route.fulfill({ json: { ...devices[3], usb: false } })
+	);
+	await page.goto('/devices');
+	const saved = page.getByRole('region', { name: 'Saved devices' });
+	await expect(saved.getByRole('button', { name: 'Set up Wi-Fi', exact: true })).toHaveCount(2);
+	const row = (name: string) =>
+		saved.locator('.status-dot').locator('..').filter({ hasText: name });
+	await expect(row('Legacy USB').getByRole('button', { name: 'Set up Wi-Fi' })).toBeVisible();
+	await expect(row('Explicit Wi-Fi').getByRole('button', { name: 'Set up Wi-Fi' })).toHaveCount(0);
+	await expect(row('Wireless tablet').getByRole('button', { name: 'Set up Wi-Fi' })).toHaveCount(0);
+	await row('USB tunnel').getByRole('button', { name: 'Set up Wi-Fi' }).click();
+	await expect(page).toHaveURL('/library');
+	expect(await page.evaluate(() => JSON.parse(localStorage.getItem('rm_active_device')!))).toBe(
+		'wireless'
+	);
+});
+
+test('an unreachable USB probe offers no address shortcut or detected-tablet status', async ({
+	page
+}) => {
+	await mockTablet(page, false);
+	await page.goto('/devices');
+	await page.getByLabel('Host', { exact: true }).fill('127.0.0.1');
+	await expect(page.getByText('No tablet on USB', { exact: true })).toBeVisible();
+	await expect(page.getByText('Nothing on USB yet', { exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Use USB address', exact: true })).toHaveCount(0);
+});
