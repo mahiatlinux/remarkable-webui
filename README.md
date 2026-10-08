@@ -53,7 +53,7 @@ Build a release installer with `npm run desktop:build`. Outputs are under `src-t
 
 The build bundles the backend and copies the build machine's Node executable. Build on the same OS and architecture as the installer. End users do not need Node or Rust. The desktop backend uses a random loopback port and a token unique to each app session. Closing the app stops that backend. Saved tablet connections share the web app's config directory.
 
-The `desktop` workflow builds Linux x64, Windows x64 and both macOS architectures. Run it manually for downloadable CI artifacts. Version tags attach installers to the GitHub release alongside the web archive. Packages are unsigned unless signing credentials are configured on the build machine.
+The `desktop` workflow builds Linux x64 on Ubuntu 22.04, Windows x64 and both macOS architectures. Run it manually for downloadable CI artifacts. Version tags attach installers to the GitHub release alongside the web archive. Packages are unsigned unless signing credentials are configured on the build machine.
 
 ## Development checks
 
@@ -66,6 +66,8 @@ npm run test:ui
 npm run desktop:prepare
 node tools/smoke-sidecar.mjs
 ```
+
+Linux desktop builds verify permissions stored in the finished AppImage and launch it under Xvfb to check that its window appears and its bundled backend accepts authenticated requests. To run these checks locally, install `squashfs-tools`, `xvfb`, `x11-utils` and `dbus-x11`, then run `node tools/check-appimage.mjs path/to/app.AppImage` and `xvfb-run -a dbus-run-session -- node tools/smoke-appimage.mjs path/to/app.AppImage`.
 
 After building on Windows, run `node tools/smoke-desktop.mjs` to launch the actual app with temporary settings and verify service startup, authenticated requests and shutdown. Pass an executable path to check an installed copy. Startup errors are written to `tablet-service.log` in the app's log directory; the error screen shows the path.
 

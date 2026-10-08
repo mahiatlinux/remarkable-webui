@@ -1,7 +1,7 @@
 {
 	"name": "remarkable-webui",
 	"private": true,
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"type": "module",
 	"scripts": {
 		"dev": "concurrently -k -n server,web -c blue,magenta \"tsx watch server/index.ts\" \"vite dev\"",
@@ -19,7 +19,7 @@
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.62.1",
-		"@tauri-apps/cli": "^2.11.4",
+		"@tauri-apps/cli": "^2.12.0",
 		"@types/archiver": "^8.0.0",
 		"@types/busboy": "^1.5.4",
 		"@types/express": "^5.0.6",
