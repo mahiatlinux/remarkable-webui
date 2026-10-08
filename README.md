@@ -40,6 +40,22 @@ The dev server is on http://localhost:5173 with the API on port 8787. For produc
 
 Saved devices, including passwords, live in `~/.config/remarkable-webui/devices.json` with mode 600. The server listens on `127.0.0.1` only.
 
+## macOS USB connection troubleshooting
+
+If the app reports `EHOSTUNREACH` while Apple's `/usr/bin/ssh` can reach the tablet, macOS may be restricting local-network access for the app or Node process. Check System Settings › Privacy & Security › Local Network. This error can also mean a real network failure; successful ping alone does not prove SSH is reachable.
+
+If system SSH works but the app still cannot connect, keep this command running in Terminal (replace the key path with your saved tablet key):
+
+```sh
+/usr/bin/ssh -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -i ~/.ssh/your_tablet_key -L 127.0.0.1:2222:10.11.99.1:22 root@10.11.99.1
+```
+
+Omit `-i ~/.ssh/your_tablet_key` to use password authentication. In Devices, add or edit a connection with host `127.0.0.1`, port `2222`, your usual tablet login and **USB attached** checked. The USB indicator probes that endpoint, and **Set up Wi-Fi** stays available. Wi-Fi setup saves a separate profile on the tablet's SSH port 22; it keeps your forwarded USB endpoint unchanged and verifies the tablet's SSH identity before sending credentials.
+
+The app does not start or manage this tunnel. Stop it with Ctrl-C and restart it after unplugging, a tablet reboot or a Mac restart. Keepalive options detect a broken connection but do not restart it. USB-marked profiles are excluded from automatic Wi-Fi discovery so discovery cannot overwrite the tunnel address.
+
+Packages remain unsigned unless you configure signing credentials. Signing and notarization are separate release setup; this workaround does not establish which macOS subsystem refused the original connection.
+
 ## Desktop builds
 
 Install Node.js 22+, Rust and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your platform, then:

@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { USB_HOST, addDevice, probeTcp, removeDevice, updateDevice } from '../devices';
+import { USB_HOST, addDevice, listDevices, probeTcp, removeDevice, updateDevice } from '../devices';
+import { isUsbDevice } from '../../shared/devices';
 import { emit, subscribe } from '../events';
 import { allStates, dropSession, getSession } from '../session';
 import { setupWifi } from '../wifi';
@@ -9,7 +10,19 @@ export const router = Router();
 router.get('/events', (_req, res) => subscribe(res));
 
 router.get('/usb', async (_req, res) => {
-	res.json({ reachable: await probeTcp(USB_HOST, 22), host: USB_HOST });
+	const endpoints = [
+		...listDevices()
+			.filter(isUsbDevice)
+			.map(({ host, port }) => ({ host, port })),
+		{ host: USB_HOST, port: 22 }
+	];
+	const results = await Promise.all(
+		endpoints.map(async (endpoint) => ({
+			...endpoint,
+			reachable: await probeTcp(endpoint.host, endpoint.port)
+		}))
+	);
+	res.json(results.find((result) => result.reachable) ?? results[0]);
 });
 
 router.get('/devices', (_req, res) => res.json(allStates()));

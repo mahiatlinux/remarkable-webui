@@ -1,6 +1,6 @@
 import { isIPv4 } from 'node:net';
 import type { DeviceState } from '../shared/types';
-import { probeTcp, saveWifiDevice } from './devices';
+import { probeTcp, saveWifiDevice, wifiPort } from './devices';
 import { HttpError } from './http';
 import { dropSession, getSession, type Session } from './session';
 
@@ -37,7 +37,8 @@ async function configure(session: Session): Promise<DeviceState> {
 			'Connect the tablet to the same Wi-Fi network as this computer, then try Set up Wi-Fi again.'
 		);
 	}
-	if (!(await probeTcp(host, session.device.port))) {
+	const port = wifiPort(session.device);
+	if (!(await probeTcp(host, port))) {
 		const enabled = await session.exec(
 			'if command -v rm-ssh-over-wlan >/dev/null 2>&1; then rm-ssh-over-wlan on && systemctl is-active --quiet dropbear-wlan.socket; fi',
 			{ allowFailure: true }
@@ -48,14 +49,14 @@ async function configure(session: Session): Promise<DeviceState> {
 				'Could not enable Wi-Fi SSH on the tablet. Keep USB connected and try again.'
 			);
 		}
-		if (!(await probeTcp(host, session.device.port, 2000))) {
+		if (!(await probeTcp(host, port, 2000))) {
 			throw new HttpError(
 				502,
-				`Cannot reach Wi-Fi SSH at ${host}:${session.device.port}. Keep the tablet awake on the same network as this computer and check that Wi-Fi SSH is enabled.`
+				`Cannot reach Wi-Fi SSH at ${host}:${port}. Keep the tablet awake on the same network as this computer and check that Wi-Fi SSH is enabled.`
 			);
 		}
 	}
-	await session.verifyAddress(host);
+	await session.verifyAddress(host, port);
 	const previousHost = session.device.host;
 	const device = saveWifiDevice(session.id, host);
 	if (device.id !== session.id || previousHost !== host) dropSession(device.id);

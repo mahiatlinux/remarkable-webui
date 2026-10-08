@@ -1,3 +1,4 @@
+import { isUsbDevice } from '../shared/devices';
 import { isIPv4 } from 'node:net';
 import { networkInterfaces, type NetworkInterfaceInfo } from 'node:os';
 import { Client } from 'ssh2';
@@ -115,6 +116,6 @@ export async function discoverWifi(
 	device: StoredDevice,
 	signal: AbortSignal
 ): Promise<string | undefined> {
-	if (!device.sshHostKey || device.host === USB_HOST) return;
+	if (!device.sshHostKey || isUsbDevice(device)) return;
 	return findWifiAddress(wifiCandidates(device.host), device.port, device.sshHostKey, signal);
 }

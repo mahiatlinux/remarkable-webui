@@ -8,6 +8,7 @@ export interface DeviceInput {
 	password?: string;
 	keyPath?: string;
 	autoRestart: boolean;
+	usb?: boolean;
 }
 
 export interface Device extends Omit<DeviceInput, 'password'> {
@@ -26,6 +27,7 @@ export interface DeviceState extends Device {
 export interface UsbProbe {
 	reachable: boolean;
 	host: string;
+	port?: number;
 }
 
 export type LibraryItemType = 'folder' | 'notebook' | 'pdf' | 'epub';

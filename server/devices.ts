@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto';
 import { connect } from 'node:net';
 import type { Device, DeviceInput } from '../shared/types';
 import { HttpError } from './http';
+import { isUsbDevice, USB_HOST } from '../shared/devices';
+export { USB_HOST } from '../shared/devices';
 
 export interface StoredDevice extends DeviceInput {
 	id: string;
@@ -14,8 +16,6 @@ export interface StoredDevice extends DeviceInput {
 
 const configDir = process.env.RM_CONFIG_DIR ?? path.join(homedir(), '.config', 'remarkable-webui');
 const configFile = path.join(configDir, 'devices.json');
-
-export const USB_HOST = '10.11.99.1';
 
 let devices: StoredDevice[] = load();
 
@@ -52,6 +52,8 @@ function normalize(input: Partial<DeviceInput>, base?: StoredDevice): DeviceInpu
 	if (!host) throw new HttpError(400, 'Host is required');
 	const port = Number(input.port ?? base?.port ?? 22);
 	if (!Number.isInteger(port) || port < 1 || port > 65535) throw new HttpError(400, 'Invalid port');
+	if (input.usb !== undefined && typeof input.usb !== 'boolean')
+		throw new HttpError(400, 'USB must be a boolean');
 	const password = input.password === undefined ? base?.password : input.password || undefined;
 	const keyPath = input.keyPath === undefined ? base?.keyPath : input.keyPath.trim() || undefined;
 	return {
@@ -61,7 +63,8 @@ function normalize(input: Partial<DeviceInput>, base?: StoredDevice): DeviceInpu
 		username: (input.username ?? base?.username ?? 'root').trim() || 'root',
 		password,
 		keyPath,
-		autoRestart: input.autoRestart ?? base?.autoRestart ?? true
+		autoRestart: input.autoRestart ?? base?.autoRestart ?? true,
+		usb: input.usb ?? base?.usb
 	};
 }
 
@@ -80,28 +83,38 @@ export function updateDevice(id: string, input: Partial<DeviceInput>): StoredDev
 	return device;
 }
 
+export function wifiPort(device: StoredDevice): number {
+	return isUsbDevice(device) && device.host !== USB_HOST ? 22 : device.port;
+}
+
 export function saveWifiDevice(sourceId: string, host: string): StoredDevice {
 	const source = getDevice(sourceId);
-	if (source.host !== USB_HOST) return updateDevice(sourceId, { host });
+	if (!isUsbDevice(source)) return updateDevice(sourceId, { host });
+	const port = wifiPort(source);
 	const existing =
-		devices.find((device) => device.wifiSourceId === sourceId) ??
+		devices.find((device) => !isUsbDevice(device) && device.wifiSourceId === sourceId) ??
 		devices.find(
 			(device) =>
-				device.host !== USB_HOST &&
+				!isUsbDevice(device) &&
 				source.sshHostKey &&
 				device.sshHostKey === source.sshHostKey &&
-				device.port === source.port &&
+				device.port === port &&
 				device.username === source.username
 		) ??
 		devices.find(
 			(device) =>
-				device.host === host && device.port === source.port && device.username === source.username
+				!isUsbDevice(device) &&
+				device.host === host &&
+				device.port === port &&
+				device.username === source.username
 		);
 	const device: StoredDevice = {
 		...source,
 		id: existing?.id ?? randomUUID(),
 		name: existing?.name ?? `${source.name.replace(/\s+\(USB\)$/i, '')} (Wi-Fi)`,
 		host,
+		port,
+		usb: false,
 		wifiSourceId: sourceId
 	};
 	devices = existing
