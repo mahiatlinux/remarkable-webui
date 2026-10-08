@@ -67,6 +67,8 @@ npm run desktop:prepare
 node tools/smoke-sidecar.mjs
 ```
 
+Linux desktop builds verify permissions stored in the finished AppImage and launch it under Xvfb to check that its window appears and its bundled backend accepts authenticated requests. To run these checks locally, install `squashfs-tools`, `xvfb`, `x11-utils` and `dbus-x11`, then run `node tools/check-appimage.mjs path/to/app.AppImage` and `xvfb-run -a dbus-run-session -- node tools/smoke-appimage.mjs path/to/app.AppImage`.
+
 After building on Windows, run `node tools/smoke-desktop.mjs` to launch the actual app with temporary settings and verify service startup, authenticated requests and shutdown. Pass an executable path to check an installed copy. Startup errors are written to `tablet-service.log` in the app's log directory; the error screen shows the path.
 
 Tests use temporary device storage and a local SSH test server. Browser tests mock the tablet API. The HTTP handlers are grouped under `server/routes/`; `server/app.ts` creates the API independently of process startup. Library selection, menus and dialogs live in separate modules. Route components load on demand.
