@@ -54,6 +54,8 @@ function normalize(input: Partial<DeviceInput>, base?: StoredDevice): DeviceInpu
 	if (!Number.isInteger(port) || port < 1 || port > 65535) throw new HttpError(400, 'Invalid port');
 	if (input.usb !== undefined && typeof input.usb !== 'boolean')
 		throw new HttpError(400, 'USB must be a boolean');
+	if (input.useAgent !== undefined && typeof input.useAgent !== 'boolean')
+		throw new HttpError(400, 'Use SSH agent must be a boolean');
 	const password = input.password === undefined ? base?.password : input.password || undefined;
 	const keyPath = input.keyPath === undefined ? base?.keyPath : input.keyPath.trim() || undefined;
 	return {
@@ -63,6 +65,7 @@ function normalize(input: Partial<DeviceInput>, base?: StoredDevice): DeviceInpu
 		username: (input.username ?? base?.username ?? 'root').trim() || 'root',
 		password,
 		keyPath,
+		useAgent: input.useAgent ?? base?.useAgent,
 		autoRestart: input.autoRestart ?? base?.autoRestart ?? true,
 		usb: input.usb ?? base?.usb
 	};

@@ -157,6 +157,7 @@ export default function DevicesView() {
 			username: device.username,
 			password: '',
 			keyPath: device.keyPath ?? '',
+			useAgent: device.useAgent,
 			autoRestart: device.autoRestart,
 			usb: isUsbDevice(device)
 		});
@@ -376,6 +377,7 @@ export default function DevicesView() {
 									<input
 										className={field}
 										type="password"
+										disabled={draft.useAgent}
 										value={draft.password ?? ''}
 										placeholder={
 											draft.id ? 'Leave empty to keep the password' : 'Password from step 3'
@@ -389,10 +391,21 @@ export default function DevicesView() {
 									<input
 										className={field}
 										value={draft.keyPath ?? ''}
+										disabled={draft.useAgent}
 										placeholder="~/.ssh/id_ed25519, optional instead of a password"
 										aria-label="Private key path"
 										onChange={(e) => setDraft({ ...draft, keyPath: e.currentTarget.value })}
 									/>
+								</Row>
+								<Row label="SSH agent">
+									<label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+										<input
+											type="checkbox"
+											checked={draft.useAgent ?? false}
+											onChange={(e) => setDraft({ ...draft, useAgent: e.currentTarget.checked })}
+										/>
+										Use SSH agent instead of a password or key file
+									</label>
 								</Row>
 							</div>
 							<div className="flex justify-end gap-1.5 px-4 pt-1 pb-4">
