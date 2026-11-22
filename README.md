@@ -40,6 +40,10 @@ The dev server is on http://localhost:5173 with the API on port 8787. For produc
 
 Saved devices, including passwords, live in `~/.config/remarkable-webui/devices.json` with mode 600. The server listens on `127.0.0.1` only.
 
+To use a passphrase-protected SSH key, load it into your SSH agent (for example, `ssh-add <key-file>`), then select **Use SSH agent** in the device form. In this mode WebUI does not read the key file, ask for its passphrase, or fall back to a saved password. On Windows it uses the Windows OpenSSH agent by default. To use a different agent, set `SSH_AUTH_SOCK` to its socket or Windows named pipe before launching WebUI. The agent must be available to the backend process. SSH agent forwarding to the tablet is not enabled.
+
+For Pageant, use [`--openssh-config`](https://the.earth.li/~sgtatham/putty/latest/htmldoc/Chapter9.html#pageant-cmdline-openssh) to find its named pipe. Set `SSH_AUTH_SOCK` to the `IdentityAgent` pipe path from the generated file, then launch WebUI from the same shell.
+
 ## macOS USB connection troubleshooting
 
 If the app reports `EHOSTUNREACH` while Apple's `/usr/bin/ssh` can reach the tablet, macOS may be restricting local-network access for the app or Node process. Check System Settings › Privacy & Security › Local Network. This error can also mean a real network failure; successful ping alone does not prove SSH is reachable.

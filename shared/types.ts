@@ -7,6 +7,7 @@ export interface DeviceInput {
 	username: string;
 	password?: string;
 	keyPath?: string;
+	useAgent?: boolean;
 	autoRestart: boolean;
 	usb?: boolean;
 }

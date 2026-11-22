@@ -393,12 +393,20 @@ export class Session {
 }
 
 function sshConfig(device: StoredDevice): ConnectConfig {
+	const agent = device.useAgent
+		? process.env.SSH_AUTH_SOCK ||
+			(process.platform === 'win32' ? '\\\\.\\pipe\\openssh-ssh-agent' : undefined)
+		: undefined;
+	if (device.useAgent && !agent) {
+		throw new HttpError(400, 'SSH agent not configured. Start your agent and set SSH_AUTH_SOCK.');
+	}
 	return {
 		host: device.host,
 		port: device.port,
 		username: device.username,
-		password: device.password,
-		privateKey: device.keyPath ? readKey(device.keyPath) : undefined,
+		agent,
+		password: device.useAgent ? undefined : device.password,
+		privateKey: !device.useAgent && device.keyPath ? readKey(device.keyPath) : undefined,
 		readyTimeout: 10000,
 		keepaliveInterval: 5000,
 		keepaliveCountMax: 3
@@ -419,6 +427,9 @@ export function describeSshError(
 	platform = process.platform
 ): string {
 	if (error.level === 'client-authentication') {
+		if (device.useAgent) {
+			return 'SSH agent authentication failed. Make sure the agent is running and has a key authorized on the tablet.';
+		}
 		return 'Authentication failed. Check the password from Settings > Help > Copyrights and licenses.';
 	}
 	if ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED') {

@@ -4,9 +4,9 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
-import { createHash, generateKeyPairSync } from 'node:crypto';
+import { createHash, generateKeyPairSync, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { Socket } from 'node:net';
+import { createServer as createSocketServer, Socket } from 'node:net';
 import ssh2, { type Connection } from 'ssh2';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'remarkable-wifi-tests-'));
@@ -93,6 +93,7 @@ async function tablet(
 		otherDevice?: boolean;
 		wifiPassword?: string;
 		useKey?: boolean;
+		useAgent?: boolean;
 	} = {}
 ) {
 	const clients = new Set<Connection>();
@@ -122,9 +123,11 @@ async function tablet(
 						((context.method === 'password' &&
 							context.password ===
 								(wireless ? (options.wifiPassword ?? 'saved-password') : 'saved-password')) ||
-							(options.useKey &&
+							((options.useKey || options.useAgent) &&
 								context.method === 'publickey' &&
-								context.key.data.equals(clientPublicKey)))
+								context.key.data.equals(clientPublicKey) &&
+								(!context.signature ||
+									parsedKey.verify(context.blob, context.signature, context.hashAlgo) === true)))
 					)
 						context.accept();
 					else context.reject();
@@ -171,6 +174,7 @@ async function tablet(
 		host: '127.0.0.1',
 		port,
 		...(options.usbTunnel ? { usb: true } : {}),
+		useAgent: options.useAgent,
 		...(options.useKey ? { keyPath } : { password: 'saved-password' })
 	});
 	return { device, commands, wifiAuthentications };
@@ -203,6 +207,50 @@ test('Wi-Fi setup supports saved private keys and already enabled Wi-Fi SSH', as
 		fixture.commands.some((command) => command.includes('rm-ssh-over-wlan')),
 		false
 	);
+});
+
+test('SSH agent signs for the saved connection and its Wi-Fi profile', async (t) => {
+	const socketPath =
+		process.platform === 'win32'
+			? `\\\\.\\pipe\\remarkable-test-${randomUUID()}`
+			: path.join(directory, 'agent.sock');
+	const originalSocket = process.env.SSH_AUTH_SOCK;
+	process.env.SSH_AUTH_SOCK = socketPath;
+	let signatures = 0;
+	const agent = createSocketServer((socket) => {
+		const protocol = new ssh2.AgentProtocol(false);
+		socket.pipe(protocol).pipe(socket);
+		protocol.on('identities', (request) => protocol.getIdentitiesReply(request, [parsedKey]));
+		protocol.on('sign', (request, key, data, options) => {
+			const signature = parsedKey.sign(data, options.hash);
+			if (!key.getPublicSSH().equals(clientPublicKey) || signature instanceof Error) {
+				protocol.failureReply(request);
+				return;
+			}
+			signatures++;
+			protocol.signReply(request, signature);
+		});
+	});
+	agent.listen(socketPath);
+	await once(agent, 'listening');
+	t.after(async () => {
+		if (originalSocket === undefined) delete process.env.SSH_AUTH_SOCK;
+		else process.env.SSH_AUTH_SOCK = originalSocket;
+		await new Promise<void>((resolve) => agent.close(() => resolve()));
+	});
+	const fixture = await tablet(t, {
+		wifiReady: true,
+		useAgent: true,
+		wifiPassword: 'different'
+	});
+	updateDevice(fixture.device.id, { keyPath: path.join(directory, 'missing-key') });
+	await getSession(fixture.device.id).connect();
+	assert.equal(signatures, 1);
+	const result = await setup(fixture.device.id);
+	assert.equal(result.status, 200, JSON.stringify(result.body));
+	assert.equal(result.body.useAgent, true);
+	assert.ok(signatures > 1);
+	assert.ok(fixture.wifiAuthentications.every((method) => method !== 'password'));
 });
 
 test('simultaneous setup requests share one attempt', async (t) => {
